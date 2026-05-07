@@ -54,4 +54,17 @@ auth.get("/auth/me", (c) => {
   return c.json(response);
 });
 
+// salesCatalogAppAPI/src/routes/auth.ts
+auth.post("/auth/login", async (c) => {
+  const { username, password } = await c.req.json();
+  
+  return c.json({
+    token: "fake-jwt-token",
+    user: {
+      username: username || "Consultora",
+      role: "admin"
+    }
+  });
+});
+
 export default auth;
