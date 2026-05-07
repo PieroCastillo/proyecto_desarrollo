@@ -17,7 +17,6 @@ type PatchStockBody = {
 
 products.get("/products", (c) => {
   /*
-    Qué hace:
     - lista catálogo
     - filtros por categoría / stock
   */
@@ -34,7 +33,6 @@ products.get("/products", (c) => {
 
 products.post("/products", async (c) => {
   /*
-    Qué hace:
     - registrar producto
   */
 
@@ -45,9 +43,9 @@ products.post("/products", async (c) => {
     ...body,
   });
 });
+
 products.patch("/products/:id/stock", async (c) => {
   /*
-    Qué hace:
     - suma/resta stock
   */
 

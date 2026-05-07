@@ -19,7 +19,6 @@ type UpdateRouteStatusBody = {
 
 routes.post("/routes", async (c) => {
   /*
-    Qué hace:
     - crear ruta de reparto
     - asignar pedidos
   */
@@ -35,7 +34,6 @@ routes.post("/routes", async (c) => {
 
 routes.patch("/routes/:id/status", async (c) => {
   /*
-    Qué hace:
     - actualizar estado reparto
   */
 
