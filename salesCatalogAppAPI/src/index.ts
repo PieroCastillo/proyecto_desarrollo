@@ -14,6 +14,5 @@ app.route('/api', auth)
 app.route('/api', clients)
 app.route('/api', consultants)
 app.route('/api', products)
-app.route('/api', orders)
 
 export default app
