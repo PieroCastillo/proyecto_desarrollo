@@ -1,141 +1,143 @@
 :root {
-    --primary: #2d3436;
-    --accent: #e84393;
-    --light: #f9f9f9;
+    --primary: #1d1d1f;
+    --secondary: #86868b;
+    --accent: #0071e3;
+    --light: #f5f5f7;
     --white: #ffffff;
+    --border: #d2d2d7;
+    --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {
-    font-family: 'Montserrat', sans-serif;
+    font-family: var(--font-family);
     margin: 0;
     background-color: var(--light);
     color: var(--primary);
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
 }
 
-.container { max-width: 1200px; margin: auto; padding: 0 20px; }
-
-/* Navbar con Login integrado */
-.main-nav {
-    background: var(--white);
-    padding: 15px 0;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-    position: sticky; top: 0; z-index: 100;
+.container { 
+    max-width: 1040px; 
+    margin: auto; 
+    padding: 0 20px; 
 }
 
-.nav-flex { display: flex; justify-content: space-between; align-items: center; }
-.logo { font-weight: 700; font-size: 1.5rem; letter-spacing: -1px; }
-.logo span { color: var(--accent); }
-
-.auth-box input {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    margin-left: 5px;
-}
-
-.btn-login {
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 8px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 600;
-}
+/* Base Utility Classes */
+.fade-in { animation: fadeIn 0.8s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Hero Section */
 .hero {
-    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1350&q=80');
-    background-size: cover;
-    color: white;
-    padding: 100px 0;
+    background: #000;
+    color: var(--white);
+    padding: 120px 0 100px;
     text-align: center;
 }
 
 .promo-badge {
-    background: var(--accent);
+    color: #f56300;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
     display: inline-block;
-    padding: 5px 15px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    margin-bottom: 15px;
 }
 
 /* Eventos y Testimonios */
-.events-section { padding: 40px 0; }
+.events-section { padding: 80px 0; }
 .event-card {
     display: flex;
     align-items: center;
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    gap: 20px;
-    border-left: 5px solid var(--accent);
+    background: var(--white);
+    padding: 24px 32px;
+    border-radius: 18px;
+    gap: 24px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    margin-bottom: 20px;
+}
+.event-card:hover {
+    transform: scale(1.01);
+    box-shadow: 0 14px 44px rgba(0,0,0,0.07);
 }
 
 .comment-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    padding: 30px 0;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    padding: 40px 0;
 }
 
 .comment {
-    background: #eee;
-    padding: 20px;
-    border-radius: 10px;
-    font-style: italic;
+    background: var(--white);
+    padding: 32px;
+    border-radius: 20px;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    color: var(--primary);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.04);
 }
 
 /* Footer & Social */
-.footer { background: #2d3436; color: white; padding: 50px 0; margin-top: 50px; }
+.footer { 
+    background: var(--light); 
+    color: var(--secondary); 
+    padding: 60px 0; 
+    margin-top: 80px; 
+    border-top: 1px solid var(--border);
+}
 .footer-grid { display: grid; grid-template-columns: 1fr 1fr; }
 .icons { font-size: 1.5rem; margin-top: 15px; }
-.icons a { color: white; margin-right: 15px; transition: 0.3s; }
-.icons a:hover { color: var(--accent); }
+.icons a { color: var(--secondary); margin-right: 15px; transition: 0.3s; }
+.icons a:hover { color: var(--primary); }
 
-/* Vista Privada */
-.user-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: white;
-    padding: 30px;
-    border-radius: 15px;
-    margin: 40px 0;
-}
+/* Vista Privada Global Components */
+.section { padding: 60px 0; }
+.page-header { margin-bottom: 40px; display: flex; justify-content: space-between; align-items: flex-end; }
+.page-title { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+.page-sub { color: var(--secondary); font-size: 1.1rem; margin-top: 8px; }
 
-.balance-card .amount {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #27ae60;
-    display: block;
-}
-
-.product-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-}
-
-.card-prod {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    text-align: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-}
-
-.btn-add {
-    background: #3498db;
+.btn-primary, .btn-add, .btn-save {
+    background: var(--accent);
     color: white;
     border: none;
-    width: 100%;
-    padding: 10px;
-    border-radius: 5px;
+    padding: 12px 24px;
+    border-radius: 980px; /* Apple pill shape */
+    font-size: 0.95rem;
+    font-weight: 500;
     cursor: pointer;
-    margin-top: 10px;
+    transition: background 0.2s;
+}
+.btn-primary:hover, .btn-add:hover, .btn-save:hover { background: #0077ED; }
+
+.form-card {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 40px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+    margin-bottom: 40px;
+}
+.field input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 1rem;
+    background: var(--white);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
 }
 
-.fade-in { animation: fadeIn 0.6s ease-in; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.table-card, .client-list {
+    background: var(--white);
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+    overflow: hidden;
+}

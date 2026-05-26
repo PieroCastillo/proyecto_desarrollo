@@ -5,6 +5,12 @@ export type LoginBody = {
   password: string;
 };
 
+export type RegisterBody = {
+  username: string;
+  password: string;
+  role?: string;
+};
+
 export type User = {
   _id: ObjectId;
   username: string;

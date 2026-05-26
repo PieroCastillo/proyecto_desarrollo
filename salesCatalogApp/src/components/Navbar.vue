@@ -7,15 +7,20 @@ const props = defineProps<{
   currentView?: string
 }>()
 
-const emit = defineEmits(["login", "logout", "navigate"])
+const emit = defineEmits(["login", "register", "logout", "navigate"])
 
 const username = ref("")
 const password = ref("")
 const menuOpen = ref(false)
+const isRegistering = ref(false)
 
-function onLoginClick() {
+function onSubmit() {
   if (username.value && password.value) {
-    emit("login", { username: username.value, password: password.value })
+    if (isRegistering.value) {
+      emit("register", { username: username.value, password: password.value })
+    } else {
+      emit("login", { username: username.value, password: password.value })
+    }
     username.value = ""
     password.value = ""
   }
@@ -30,9 +35,12 @@ function onLoginClick() {
       </div>
 
       <div v-if="!isLogged" class="login-form">
-        <input v-model="username" type="text" placeholder="Usuario" class="nav-input" @keyup.enter="onLoginClick" />
-        <input v-model="password" type="password" placeholder="••••••" class="nav-input" @keyup.enter="onLoginClick" />
-        <button class="btn-primary" @click="onLoginClick">Entrar</button>
+        <input v-model="username" type="text" placeholder="Usuario" class="nav-input" @keyup.enter="onSubmit" />
+        <input v-model="password" type="password" placeholder="••••••" class="nav-input" @keyup.enter="onSubmit" />
+        <button class="btn-primary" @click="onSubmit">{{ isRegistering ? 'Crear cuenta' : 'Entrar' }}</button>
+        <button class="btn-toggle" @click="isRegistering = !isRegistering">
+          {{ isRegistering ? 'Tengo cuenta' : 'Crear cuenta' }}
+        </button>
       </div>
 
       <div v-else class="nav-logged">
@@ -53,12 +61,13 @@ function onLoginClick() {
 
 <style scoped>
 .navbar {
-  background: #fff;
-  border-bottom: 1px solid #f0f0f0;
+  background: rgba(255, 255, 255, 0.72);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 1px 12px rgba(0,0,0,0.06);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .nav-wrapper {
@@ -70,116 +79,132 @@ function onLoginClick() {
 }
 
 .logo {
-  font-size: 1.2rem;
-  font-weight: 800;
-  letter-spacing: -0.5px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   cursor: pointer;
-  color: #1a1a1a;
+  color: var(--primary);
   user-select: none;
 }
 
 .logo span {
-  color: #e91e63;
+  color: var(--accent);
 }
 
 .login-form {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
 }
 
 .nav-input {
-  padding: 6px 12px;
-  border: 1px solid #e8e8e8;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 980px;
   font-size: 0.85rem;
   outline: none;
-  transition: border-color 0.2s;
-  background: #fafafa;
+  background: rgba(0, 0, 0, 0.04);
+  transition: background 0.2s;
+  color: var(--primary);
 }
 
 .nav-input:focus {
-  border-color: #e91e63;
-  background: #fff;
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .btn-primary {
-  background: #e91e63;
+  background: var(--primary);
   color: white;
   border: none;
-  padding: 7px 16px;
-  border-radius: 6px;
+  padding: 8px 20px;
+  border-radius: 980px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 0.85rem;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.1s;
 }
 
 .btn-primary:hover {
-  background: #c2185b;
+  background: #000;
+}
+.btn-primary:active {
+  transform: scale(0.96);
+}
+
+.btn-toggle {
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 8px 12px;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.btn-toggle:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 
 .nav-logged {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 32px;
 }
 
 .nav-links {
   display: flex;
-  gap: 4px;
+  gap: 8px;
 }
 
 .nav-link {
   background: none;
   border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  color: #555;
+  padding: 8px 16px;
+  border-radius: 980px;
+  font-size: 0.85rem;
+  color: var(--secondary);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
   font-weight: 500;
 }
 
 .nav-link:hover {
-  background: #fce4ec;
-  color: #e91e63;
+  color: var(--primary);
 }
 
 .nav-link.active {
-  background: #fce4ec;
-  color: #e91e63;
-  font-weight: 600;
+  background: var(--primary);
+  color: white;
+  font-weight: 500;
 }
 
 .nav-user {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding-left: 20px;
-  border-left: 1px solid #f0f0f0;
+  gap: 16px;
 }
 
 .user-name {
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #333;
+  color: var(--primary);
 }
 
 .btn-logout {
-  background: none;
-  border: 1px solid #e8e8e8;
-  padding: 5px 12px;
-  border-radius: 6px;
+  background: rgba(0,0,0,0.04);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 980px;
   font-size: 0.8rem;
-  color: #888;
+  font-weight: 500;
+  color: var(--primary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-logout:hover {
-  border-color: #e91e63;
-  color: #e91e63;
+  background: rgba(0,0,0,0.08);
 }
 </style>

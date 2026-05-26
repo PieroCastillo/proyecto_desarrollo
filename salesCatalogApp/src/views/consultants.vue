@@ -34,9 +34,11 @@ watch(page, fetchConsultants)
 async function fetchConsultants() {
   loading.value = true
   try {
+    const token = localStorage.getItem("token")
+    const headers = { Authorization: `Bearer ${token}` }
     const params = new URLSearchParams({ page: String(page.value), limit: "10" })
     if (search.value) params.set("search", search.value)
-    const res = await fetch(`${API_URL}/consultants?${params}`)
+    const res = await fetch(`${API_URL}/consultants?${params}`, { headers })
     const data = await res.json()
     consultants.value = data.items ?? []
     total.value = data.total ?? 0
@@ -61,13 +63,17 @@ async function saveConsultant() {
   if (!form.value.name || !form.value.dni || !form.value.phone || !form.value.zone) return
   saving.value = true
   try {
+    const token = localStorage.getItem("token")
     const url = editTarget.value
       ? `${API_URL}/consultants/${editTarget.value._id}`
       : `${API_URL}/consultants`
     const method = editTarget.value ? "PUT" : "POST"
     const res = await fetch(url, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
       body: JSON.stringify(form.value),
     })
     if (res.ok) {
@@ -81,7 +87,11 @@ async function saveConsultant() {
 
 async function deleteConsultant(id: string) {
   if (!confirm("¿Eliminar este consultor?")) return
-  await fetch(`${API_URL}/consultants/${id}`, { method: "DELETE" })
+  const token = localStorage.getItem("token")
+  await fetch(`${API_URL}/consultants/${id}`, { 
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  })
   await fetchConsultants()
 }
 
@@ -209,118 +219,55 @@ const totalPages = () => Math.ceil(total.value / 10)
 
 .btn-add:hover { background: #c2185b; }
 
+<style scoped>
 .toolbar {
-  margin-bottom: 20px;
+  margin-bottom: 32px;
 }
 
 .search-input {
-  padding: 10px 16px;
-  border: 1.5px solid #ebebeb;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  padding: 12px 20px;
+  border: 1px solid var(--border);
+  border-radius: 980px;
+  font-size: 0.95rem;
   outline: none;
-  width: 280px;
-  background: #fff;
-  transition: border-color 0.2s;
+  width: 320px;
+  background: var(--white);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color: var(--primary);
 }
 
 .search-input:focus {
-  border-color: #e91e63;
-}
-
-.form-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 28px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
 }
 
 .form-title {
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 20px;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #888;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.field input {
-  padding: 10px 14px;
-  border: 1.5px solid #ebebeb;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  outline: none;
-  transition: border-color 0.2s;
-  background: #fafafa;
-}
-
-.field input:focus {
-  border-color: #e91e63;
-  background: #fff;
+  color: var(--primary);
+  margin: 0 0 24px;
 }
 
 .form-actions {
   display: flex;
-  gap: 10px;
-}
-
-.btn-save {
-  background: #1a1a1a;
-  color: white;
-  border: none;
-  padding: 10px 22px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.btn-save:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .btn-cancel {
-  background: none;
-  border: 1.5px solid #ebebeb;
-  padding: 10px 22px;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  color: #888;
+  background: var(--light);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 980px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--primary);
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: background 0.2s;
 }
 
 .btn-cancel:hover {
-  border-color: #ccc;
-}
-
-.table-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 20px rgba(0,0,0,0.05);
-  overflow: hidden;
+  background: var(--border);
 }
 
 .table {
@@ -330,20 +277,20 @@ const totalPages = () => Math.ceil(total.value / 10)
 
 .table th {
   text-align: left;
-  padding: 12px 20px;
-  font-size: 0.75rem;
+  padding: 16px 24px;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: #aaa;
+  color: var(--secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid #f5f5f5;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
 }
 
 .table td {
-  padding: 14px 20px;
-  font-size: 0.9rem;
-  color: #333;
-  border-bottom: 1px solid #f9f9f9;
+  padding: 18px 24px;
+  font-size: 0.95rem;
+  color: var(--primary);
+  border-bottom: 1px solid var(--light);
 }
 
 .table tr:last-child td {
@@ -351,26 +298,26 @@ const totalPages = () => Math.ceil(total.value / 10)
 }
 
 .table tr:hover td {
-  background: #fafafa;
+  background: rgba(0,0,0,0.02);
 }
 
 .td-name {
   font-weight: 600;
-  color: #1a1a1a !important;
 }
 
 .td-mono {
-  font-family: 'Courier New', monospace;
-  font-size: 0.85rem !important;
-  color: #888 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9rem !important;
+  color: var(--secondary) !important;
 }
 
 .zone-tag {
-  background: #f0f0f0;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  color: #555;
+  background: var(--light);
+  padding: 4px 12px;
+  border-radius: 980px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--primary);
 }
 
 .td-actions {
@@ -379,66 +326,73 @@ const totalPages = () => Math.ceil(total.value / 10)
 }
 
 .action-btn {
-  background: none;
-  border: 1px solid #e8e8e8;
-  padding: 5px 12px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  color: #555;
+  background: var(--light);
+  border: none;
+  padding: 6px 14px;
+  border-radius: 980px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--primary);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.2s, color 0.2s;
 }
 
 .action-btn:hover {
-  border-color: #e91e63;
-  color: #e91e63;
+  background: var(--accent);
+  color: white;
 }
 
 .action-btn.danger:hover {
-  border-color: #f44336;
-  color: #f44336;
+  background: #ff3b30;
+  color: white;
 }
 
 .pagination {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  margin-top: 24px;
+  gap: 20px;
+  margin-top: 32px;
 }
 
 .page-btn {
-  background: #fff;
-  border: 1.5px solid #ebebeb;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.15s;
+  font-size: 1.1rem;
+  color: var(--primary);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .page-btn:hover:not(:disabled) {
-  border-color: #e91e63;
-  color: #e91e63;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .page-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+  background: var(--light);
 }
 
 .page-info {
-  font-size: 0.875rem;
-  color: #888;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--secondary);
 }
 
-.skeletons { display: flex; flex-direction: column; gap: 8px; }
+.skeletons { display: flex; flex-direction: column; gap: 12px; }
 
 .skeleton-row {
-  height: 56px;
-  border-radius: 10px;
-  background: linear-gradient(90deg, #f5f5f5 25%, #ebebeb 50%, #f5f5f5 75%);
+  height: 64px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, #f5f5f7 25%, #eaeaea 50%, #f5f5f7 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -450,7 +404,8 @@ const totalPages = () => Math.ceil(total.value / 10)
 
 .empty-state {
   text-align: center;
-  color: #bbb;
-  padding: 60px 20px;
+  color: var(--secondary);
+  padding: 80px 20px;
+  font-size: 1.1rem;
 }
 </style>

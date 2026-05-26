@@ -25,10 +25,12 @@ onMounted(fetchProducts)
 async function fetchProducts() {
   loading.value = true
   try {
+    const token = localStorage.getItem("token")
+    const headers = { Authorization: `Bearer ${token}` }
     const params = new URLSearchParams()
     if (filterCategory.value) params.set("category", filterCategory.value)
     if (filterStock.value) params.set("stock", filterStock.value)
-    const res = await fetch(`${API_URL}/products?${params}`)
+    const res = await fetch(`${API_URL}/products?${params}`, { headers })
     const data = await res.json()
     products.value = data.items ?? []
   } finally {
@@ -40,9 +42,13 @@ async function createProduct() {
   if (!form.value.name || !form.value.category || !form.value.price || !form.value.stock) return
   saving.value = true
   try {
+    const token = localStorage.getItem("token")
     const res = await fetch(`${API_URL}/products`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
       body: JSON.stringify({
         name: form.value.name,
         category: form.value.category,
@@ -61,9 +67,13 @@ async function createProduct() {
 }
 
 async function adjustStock(id: string, delta: number) {
+  const token = localStorage.getItem("token")
   await fetch(`${API_URL}/products/${id}/stock`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
     body: JSON.stringify({ delta }),
   })
   await fetchProducts()
@@ -155,144 +165,52 @@ function stockClass(stock: number) {
 </template>
 
 <style scoped>
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 24px;
-}
-
-.page-title {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0;
-}
-
-.page-sub {
-  color: #aaa;
-  font-size: 0.875rem;
-  margin: 4px 0 0;
-}
-
-.btn-add {
-  background: #e91e63;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-add:hover { background: #c2185b; }
-
-.form-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 28px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 20px rgba(0,0,0,0.06);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #888;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.field input {
-  padding: 10px 14px;
-  border: 1.5px solid #ebebeb;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  outline: none;
-  transition: border-color 0.2s;
-  background: #fafafa;
-}
-
-.field input:focus {
-  border-color: #e91e63;
-  background: #fff;
-}
-
-.btn-save {
-  background: #1a1a1a;
-  color: white;
-  border: none;
-  padding: 10px 22px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  align-self: flex-start;
-  transition: opacity 0.2s;
-}
-
-.btn-save:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
+/* Scoped overrides for generic section styles */
 .filters {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 32px;
 }
 
 .filter-select {
-  padding: 8px 14px;
-  border: 1.5px solid #ebebeb;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  padding: 12px 20px;
+  border: 1px solid var(--border);
+  border-radius: 980px;
+  font-size: 0.95rem;
   outline: none;
-  background: #fff;
+  background: var(--white);
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color: var(--primary);
+  font-weight: 500;
+  appearance: none;
 }
 
 .filter-select:focus {
-  border-color: #e91e63;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
 }
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
 }
 
 .product-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+  background: var(--white);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.03);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  transition: box-shadow 0.2s;
+  gap: 12px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .product-card:hover {
-  box-shadow: 0 4px 24px rgba(0,0,0,0.09);
+  transform: translateY(-4px);
+  box-shadow: 0 14px 44px rgba(0,0,0,0.06);
 }
 
 .prod-top {
@@ -303,17 +221,17 @@ function stockClass(stock: number) {
 
 .category-tag {
   font-size: 0.75rem;
-  color: #888;
-  background: #f5f5f5;
-  padding: 3px 10px;
-  border-radius: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--secondary);
 }
 
 .stock-badge {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 20px;
+  padding: 4px 12px;
+  border-radius: 980px;
 }
 
 .stock-ok { background: #e8f5e9; color: #27ae60; }
@@ -321,60 +239,62 @@ function stockClass(stock: number) {
 .stock-empty { background: #fce4ec; color: #e91e63; }
 
 .prod-name {
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--primary);
   margin: 0;
   line-height: 1.3;
 }
 
 .prod-price {
-  font-size: 1.15rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  color: #27ae60;
+  color: var(--primary);
   margin: 0;
 }
 
 .stock-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 4px;
-  border-top: 1px solid #f5f5f5;
-  padding-top: 12px;
+  gap: 12px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
 }
 
 .ctrl-btn {
-  width: 28px;
-  height: 28px;
-  border: 1.5px solid #ebebeb;
-  border-radius: 6px;
-  background: none;
-  font-size: 1rem;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: var(--light);
+  font-size: 1.2rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s;
-  color: #555;
+  transition: all 0.2s;
+  color: var(--primary);
 }
 
 .ctrl-btn:hover {
-  border-color: #e91e63;
-  color: #e91e63;
+  background: var(--border);
 }
 
 .ctrl-label {
-  font-size: 0.78rem;
-  color: #aaa;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--secondary);
   flex: 1;
   text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .skeleton-card {
-  height: 180px;
-  border-radius: 12px;
-  background: linear-gradient(90deg, #f5f5f5 25%, #ebebeb 50%, #f5f5f5 75%);
+  height: 220px;
+  border-radius: 20px;
+  background: linear-gradient(90deg, #f5f5f7 25%, #eaeaea 50%, #f5f5f7 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -386,7 +306,8 @@ function stockClass(stock: number) {
 
 .empty-state {
   text-align: center;
-  color: #bbb;
-  padding: 60px 20px;
+  color: var(--secondary);
+  padding: 80px 20px;
+  font-size: 1.1rem;
 }
 </style>

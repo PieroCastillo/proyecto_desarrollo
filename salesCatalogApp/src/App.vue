@@ -6,6 +6,7 @@ import HomeView from "./views/HomeView.vue"
 
 const isLogged = ref(false)
 const displayUserName = ref("Consultora")
+const userId = ref("")
 const API_URL = "http://localhost:3000/api"
 
 async function handleLogin(credentials: any) {
@@ -19,8 +20,9 @@ async function handleLogin(credentials: any) {
     if (response.ok) {
       const data = await response.json()
       isLogged.value = true
-      displayUserName.value = data.user.username
-      localStorage.setItem('token', data.token) 
+      displayUserName.value = data.data.user.username
+      userId.value = data.data.user.id
+      localStorage.setItem('token', data.data.accessToken) 
     } else {
       alert("Usuario o contraseña incorrectos en el sistema")
     }
@@ -29,18 +31,46 @@ async function handleLogin(credentials: any) {
   }
 }
 
+async function handleRegister(credentials: any) {
+  try {
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials)
+    })
+    
+    const data = await response.json()
+    if (response.ok) {
+      isLogged.value = true
+      displayUserName.value = data.data.user.username
+      userId.value = data.data.user.id
+      localStorage.setItem('token', data.data.accessToken)
+      alert("¡Cuenta creada y sesión iniciada con éxito!")
+    } else {
+      if (data.error?.code === "USERNAME_TAKEN") {
+        alert("El usuario ya existe en el sistema. Elige otro nombre.")
+      } else {
+        alert(data.error?.message || "Error al registrar el usuario (mínimo 4 caracteres).")
+      }
+    }
+  } catch (error) {
+    console.error("Error al registrarse:", error)
+  }
+}
+
 function handleLogout() {
   isLogged.value = false
   displayUserName.value = "Consultora"
+  userId.value = ""
   localStorage.removeItem('token')
 }
 </script>
 
 <template>
-  <Navbar :isLogged="isLogged" @login="handleLogin" @logout="handleLogout" />
+  <Navbar :isLogged="isLogged" @login="handleLogin" @register="handleRegister" @logout="handleLogout" />
 
   <PublicView v-if="!isLogged" />
-  <HomeView v-else :userName="displayUserName" @logout="handleLogout" />
+  <HomeView v-else :userName="displayUserName" :userId="userId" @logout="handleLogout" />
 </template>
 
 <style>

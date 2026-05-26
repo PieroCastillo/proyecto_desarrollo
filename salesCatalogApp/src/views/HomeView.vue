@@ -11,6 +11,7 @@ interface Product {
 
 const props = defineProps<{
   userName: string
+  userId: string
 }>()
 
 const emit = defineEmits(["logout"])
@@ -19,10 +20,24 @@ const API_URL = "http://localhost:3000/api"
 const products = ref<Product[]>([])
 const loading = ref(true)
 const saldo = ref(1250.40)
+const defaultClientId = ref<string | null>(null)
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${API_URL}/products?stock=available`)
+    const token = localStorage.getItem("token")
+    const headers = { Authorization: `Bearer ${token}` }
+
+    // Fetch default client for order creation
+    const clientsRes = await fetch(`${API_URL}/clients`, { headers })
+    if (clientsRes.ok) {
+      const clientsData = await clientsRes.json()
+      if (clientsData.items?.length > 0) {
+        defaultClientId.value = clientsData.items[0]._id
+      }
+    }
+
+    // Fetch products
+    const res = await fetch(`${API_URL}/products?stock=available`, { headers })
     const data = await res.json()
     products.value = data.items ?? []
   } finally {
@@ -31,13 +46,30 @@ onMounted(async () => {
 })
 
 async function addToCart(id: string, name: string) {
+  if (!defaultClientId.value) {
+    alert("Debes registrar al menos un cliente antes de crear un pedido.")
+    return
+  }
+
   try {
+    const token = localStorage.getItem("token")
     const res = await fetch(`${API_URL}/orders`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items: [{ productId: id, quantity: 1 }] }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        clientId: defaultClientId.value,
+        consultantId: props.userId,
+        items: [{ productId: id, quantity: 1 }]
+      }),
     })
-    if (res.ok) alert(`✓ ${name} añadido al pedido`)
+    if (res.ok) {
+      alert(`✓ ${name} añadido al pedido`)
+    } else {
+      alert("Error de validación al crear el pedido")
+    }
   } catch {
     alert("Error al procesar el pedido")
   }
@@ -82,26 +114,30 @@ async function addToCart(id: string, name: string) {
 
 <style scoped>
 .balance-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 32px 40px;
+  background: var(--white);
+  border-radius: 24px;
+  padding: 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
-  margin-bottom: 40px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+  margin-bottom: 60px;
 }
 
 .balance-label {
-  font-size: 0.85rem;
-  color: #aaa;
-  margin: 0 0 6px;
+  font-size: 0.9rem;
+  color: var(--secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 12px;
 }
 
 .balance-amount {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #27ae60;
+  font-size: 4rem;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.04em;
   line-height: 1;
 }
 
@@ -109,110 +145,112 @@ async function addToCart(id: string, name: string) {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 12px;
+  gap: 16px;
 }
 
 .welcome {
-  font-size: 0.9rem;
-  color: #555;
+  font-size: 1.1rem;
+  color: var(--secondary);
   margin: 0;
 }
 
 .welcome strong {
-  color: #e91e63;
+  color: var(--primary);
 }
 
 .btn-logout {
-  background: none;
-  border: 1.5px solid #ebebeb;
-  padding: 8px 18px;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  color: #888;
+  background: rgba(0,0,0,0.04);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 980px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--primary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-logout:hover {
-  border-color: #e91e63;
-  color: #e91e63;
+  background: rgba(0,0,0,0.08);
 }
 
 .section-title {
-  font-size: 1.2rem;
+  font-size: 1.8rem;
   font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1.5px solid #f0f0f0;
+  letter-spacing: -0.02em;
+  color: var(--primary);
+  margin-bottom: 24px;
 }
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
 }
 
 .product-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 22px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+  background: var(--white);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.03);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  transition: box-shadow 0.2s;
+  gap: 12px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .product-card:hover {
-  box-shadow: 0 4px 24px rgba(0,0,0,0.09);
+  transform: translateY(-4px);
+  box-shadow: 0 14px 44px rgba(0,0,0,0.06);
 }
 
 .category-tag {
   font-size: 0.75rem;
-  color: #888;
-  background: #f5f5f5;
-  padding: 3px 10px;
-  border-radius: 20px;
-  align-self: flex-start;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--secondary);
 }
 
 .prod-name {
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--primary);
   margin: 0;
   line-height: 1.3;
 }
 
 .prod-price {
-  font-size: 1.25rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  color: #27ae60;
+  color: var(--primary);
   margin: 0;
 }
 
 .btn-add {
-  background: #1a1a1a;
+  background: var(--primary);
   color: white;
   border: none;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 0.85rem;
+  padding: 12px;
+  border-radius: 980px;
+  font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
-  margin-top: auto;
-  transition: background 0.2s;
+  margin-top: 16px;
+  transition: background 0.2s, transform 0.1s;
 }
 
 .btn-add:hover {
-  background: #e91e63;
+  background: #000;
+}
+.btn-add:active {
+  transform: scale(0.96);
 }
 
 .skeleton-card {
-  height: 180px;
-  border-radius: 12px;
-  background: linear-gradient(90deg, #f5f5f5 25%, #ebebeb 50%, #f5f5f5 75%);
+  height: 220px;
+  border-radius: 20px;
+  background: linear-gradient(90deg, #f5f5f7 25%, #eaeaea 50%, #f5f5f7 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -224,22 +262,24 @@ async function addToCart(id: string, name: string) {
 
 .empty-state {
   text-align: center;
-  color: #bbb;
-  padding: 60px 20px;
+  color: var(--secondary);
+  padding: 80px 20px;
+  font-size: 1.1rem;
 }
 
 @media (max-width: 600px) {
   .balance-card {
     flex-direction: column;
-    gap: 20px;
-    padding: 24px;
+    gap: 32px;
+    padding: 32px 24px;
+    align-items: flex-start;
   }
   .balance-right {
     align-items: flex-start;
     width: 100%;
   }
-  .btn-logout {
-    width: 100%;
+  .balance-amount {
+    font-size: 3rem;
   }
 }
 </style>
