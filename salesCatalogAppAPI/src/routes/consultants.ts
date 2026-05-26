@@ -13,8 +13,10 @@ const consultantsCollection = db.collection<Consultant>("consultants");
 
 consultants.get("/consultants", async (c) => {
   try {
-    const page = Math.max(Number(c.req.query("page") ?? 1), 1);
-    const limit = Math.max(Number(c.req.query("limit") ?? 20), 1);
+    const pageQuery = Number(c.req.query("page"));
+    const page = Math.max(Number.isNaN(pageQuery) ? 1 : pageQuery, 1);
+    const limitQuery = Number(c.req.query("limit"));
+    const limit = Math.max(Number.isNaN(limitQuery) ? 20 : limitQuery, 1);
     const search = c.req.query("search")?.trim() ?? "";
 
     const filter: Record<string, unknown> = {

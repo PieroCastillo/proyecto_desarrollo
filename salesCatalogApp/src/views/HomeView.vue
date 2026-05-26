@@ -1,93 +1,79 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue"
 
-interface Producto {
-  id: string
+interface Product {
+  _id: string
   name: string
   price: number
+  stock: number
+  category: string
 }
 
-const props = defineProps<{ 
-  userName: string 
+const props = defineProps<{
+  userName: string
 }>()
 
 const emit = defineEmits(["logout"])
 
-const productosPrivados = ref<Producto[]>([])
-const saldo = ref(1250.40)
 const API_URL = "http://localhost:3000/api"
+const products = ref<Product[]>([])
+const loading = ref(true)
+const saldo = ref(1250.40)
 
-async function cargarProductosDesdeBackend() {
+onMounted(async () => {
   try {
-    const response = await fetch(`${API_URL}/products`)
-    if (response.ok) {
-      const data = await response.json()
-      productosPrivados.value = data.items 
-    }
-  } catch (error) {
-    console.error("Error al conectar con el Backend:", error)
+    const res = await fetch(`${API_URL}/products?stock=available`)
+    const data = await res.json()
+    products.value = data.items ?? []
+  } finally {
+    loading.value = false
   }
-}
-
-async function addToCart(id: string, nombre: string) {
-  try {
-    const response = await fetch(`${API_URL}/orders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productId: id, quantity: 1 })
-    })
-    if (response.ok) alert(`Éxito: Se añadió ${nombre} al pedido`)
-  } catch (error) {
-    console.error("Error al crear pedido:", error)
-  }
-}
-
-onMounted(() => {
-  cargarProductosDesdeBackend()
 })
+
+async function addToCart(id: string, name: string) {
+  try {
+    const res = await fetch(`${API_URL}/orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: [{ productId: id, quantity: 1 }] }),
+    })
+    if (res.ok) alert(`✓ ${name} añadido al pedido`)
+  } catch {
+    alert("Error al procesar el pedido")
+  }
+}
 </script>
 
 <template>
   <main class="section fade-in">
     <div class="container">
-      <header class="user-header">
-        <h2 class="welcome-text">Bienvenida, <span>{{ userName }}</span></h2>
-
-        <div class="balance-card">
-          
-          <div class="side-space"></div>
-
-          <div class="balance-main">
-            <p class="balance-label">Mi Saldo Disponible</p>
-            <span class="amount">S/ {{ saldo.toFixed(2) }}</span>
-          </div>
-          
-          <div class="side-space right-align">
-            <button class="btn-pink-logout" @click="emit('logout')">
-              Cerrar Sesión
-            </button>
-          </div>
-          
+      <div class="balance-card">
+        <div class="balance-left">
+          <p class="balance-label">Saldo disponible</p>
+          <span class="balance-amount">S/ {{ saldo.toFixed(2) }}</span>
         </div>
-      </header>
-
-      <div class="order-section">
-        <h3>Realizar Pedido</h3>
-        
-        <div class="product-grid">
-          <div v-for="p in productosPrivados" :key="p.id" class="card-prod">
-            <div class="prod-info">
-              <h4>{{ p.name }}</h4>
-              <p class="price">S/ {{ p.price.toFixed(2) }}</p>
-            </div>
-            <button class="btn-add" @click="addToCart(p.id, p.name)">
-              Añadir al pedido
-            </button>
-          </div>
+        <div class="balance-right">
+          <p class="welcome">Bienvenida, <strong>{{ userName }}</strong></p>
+          <button class="btn-logout" @click="emit('logout')">Cerrar sesión</button>
         </div>
+      </div>
 
-        <div v-if="productosPrivados.length === 0" class="empty-msg">
-          Cargando productos desde el servidor...
+      <h2 class="section-title">Realizar pedido</h2>
+
+      <div v-if="loading" class="product-grid">
+        <div v-for="i in 4" :key="i" class="skeleton-card" />
+      </div>
+
+      <div v-else-if="products.length === 0" class="empty-state">
+        No hay productos disponibles en este momento.
+      </div>
+
+      <div v-else class="product-grid">
+        <div v-for="p in products" :key="p._id" class="product-card">
+          <span class="category-tag">{{ p.category }}</span>
+          <h4 class="prod-name">{{ p.name }}</h4>
+          <p class="prod-price">S/ {{ p.price.toFixed(2) }}</p>
+          <button class="btn-add" @click="addToCart(p._id, p.name)">Añadir al pedido</button>
         </div>
       </div>
     </div>
@@ -95,139 +81,164 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.user-header {
+.balance-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
   margin-bottom: 40px;
 }
 
-.welcome-text {
-  font-size: 1.5rem;
-  margin-bottom: 20px;
-  color: #333;
-}
-
-.welcome-text span {
-  color: #e91e63;
-  font-weight: bold;
-}
-
-.balance-card {
-  background: #ffffff;
-  padding: 30px 40px;
-  border-radius: 15px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 140px;
-}
-
-.side-space {
-  flex: 1;
-}
-
-.right-align {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.balance-main {
-  flex: 2;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
 .balance-label {
-  color: #666;
-  font-size: 1.1rem;
-  margin: 0 0 5px 0;
+  font-size: 0.85rem;
+  color: #aaa;
+  margin: 0 0 6px;
 }
 
-.amount {
+.balance-amount {
+  font-size: 2.5rem;
+  font-weight: 800;
   color: #27ae60;
-  font-size: 3rem;
-  font-weight: bold;
   line-height: 1;
 }
 
-.btn-pink-logout {
-  background-color: #e91e63;
-  color: white;
-  border: none;
-  padding: 12px 24px;
+.balance-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.welcome {
+  font-size: 0.9rem;
+  color: #555;
+  margin: 0;
+}
+
+.welcome strong {
+  color: #e91e63;
+}
+
+.btn-logout {
+  background: none;
+  border: 1.5px solid #ebebeb;
+  padding: 8px 18px;
   border-radius: 8px;
-  font-weight: bold;
+  font-size: 0.85rem;
+  color: #888;
   cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.3s ease;
+  transition: all 0.2s;
 }
 
-.btn-pink-logout:hover {
-  background-color: #d81b60;
+.btn-logout:hover {
+  border-color: #e91e63;
+  color: #e91e63;
 }
 
-
-.order-section h3 {
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1a1a1a;
   margin-bottom: 20px;
-  border-bottom: 2px solid #eee;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1.5px solid #f0f0f0;
 }
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
 }
 
-.card-prod {
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  border: 1px solid #eee;
+.product-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 22px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.05);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 8px;
+  transition: box-shadow 0.2s;
 }
 
-.price {
+.product-card:hover {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.09);
+}
+
+.category-tag {
+  font-size: 0.75rem;
+  color: #888;
+  background: #f5f5f5;
+  padding: 3px 10px;
+  border-radius: 20px;
+  align-self: flex-start;
+}
+
+.prod-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.prod-price {
+  font-size: 1.25rem;
+  font-weight: 700;
   color: #27ae60;
-  font-weight: bold;
-  font-size: 1.2rem;
-  margin: 10px 0;
+  margin: 0;
 }
 
 .btn-add {
-  background: #333;
+  background: #1a1a1a;
   color: white;
   border: none;
   padding: 10px;
-  border-radius: 5px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
+  margin-top: auto;
+  transition: background 0.2s;
 }
 
 .btn-add:hover {
   background: #e91e63;
 }
 
-.empty-msg {
-  text-align: center;
-  padding: 40px;
-  color: #999;
+.skeleton-card {
+  height: 180px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f5f5f5 25%, #ebebeb 50%, #f5f5f5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
 }
 
-@media (max-width: 800px) {
+@keyframes shimmer {
+  0% { background-position: 200% 0 }
+  100% { background-position: -200% 0 }
+}
+
+.empty-state {
+  text-align: center;
+  color: #bbb;
+  padding: 60px 20px;
+}
+
+@media (max-width: 600px) {
   .balance-card {
     flex-direction: column;
-    padding: 30px;
     gap: 20px;
+    padding: 24px;
   }
-  .side-space {
-    flex: none;
+  .balance-right {
+    align-items: flex-start;
     width: 100%;
-    justify-content: center;
   }
-  .btn-pink-logout {
+  .btn-logout {
     width: 100%;
   }
 }
