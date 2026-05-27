@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, onMounted, watch, nextTick } from "vue"
 
 const props = defineProps<{
   isLogged: boolean
@@ -13,6 +13,39 @@ const username = ref("")
 const password = ref("")
 const menuOpen = ref(false)
 const isRegistering = ref(false)
+
+const indicatorStyle = ref({
+  left: '0px',
+  width: '0px',
+  opacity: 0
+})
+
+const tabsContainer = ref<HTMLElement | null>(null)
+
+function updateIndicator() {
+  nextTick(() => {
+    if (!tabsContainer.value) return
+    const activeTab = tabsContainer.value.querySelector('.nav-link.active') as HTMLElement
+    if (activeTab) {
+      indicatorStyle.value = {
+        left: `${activeTab.offsetLeft}px`,
+        width: `${activeTab.offsetWidth}px`,
+        opacity: 1
+      }
+    } else {
+      indicatorStyle.value.opacity = 0
+    }
+  })
+}
+
+watch(() => props.currentView, updateIndicator, { immediate: true })
+watch(() => props.isLogged, () => {
+  setTimeout(updateIndicator, 100)
+})
+
+onMounted(() => {
+  window.addEventListener('resize', updateIndicator)
+})
 
 function onSubmit() {
   if (username.value && password.value) {
@@ -44,7 +77,8 @@ function onSubmit() {
       </div>
 
       <div v-else class="nav-logged">
-        <nav class="nav-links">
+        <nav ref="tabsContainer" class="nav-links">
+          <div class="nav-indicator" :style="indicatorStyle"></div>
           <button :class="['nav-link', { active: currentView === 'home' }]" @click="emit('navigate', 'home')">Inicio</button>
           <button :class="['nav-link', { active: currentView === 'products' }]" @click="emit('navigate', 'products')">Productos</button>
           <button :class="['nav-link', { active: currentView === 'clients' }]" @click="emit('navigate', 'clients')">Clientes</button>
@@ -156,9 +190,23 @@ function onSubmit() {
 .nav-links {
   display: flex;
   gap: 8px;
+  position: relative;
+}
+
+.nav-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 980px;
+  background: rgba(0, 0, 0, 0.06);
+  transition: all 0.38s cubic-bezier(0.25, 1, 0.5, 1);
+  z-index: 0;
+  pointer-events: none;
 }
 
 .nav-link {
+  position: relative;
+  z-index: 1;
   background: none;
   border: none;
   padding: 8px 16px;
@@ -166,7 +214,7 @@ function onSubmit() {
   font-size: 0.85rem;
   color: var(--secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color 0.25s ease;
   font-weight: 500;
 }
 
@@ -175,8 +223,8 @@ function onSubmit() {
 }
 
 .nav-link.active {
-  background: var(--primary);
-  color: white;
+  color: var(--primary);
+  background: none;
   font-weight: 500;
 }
 

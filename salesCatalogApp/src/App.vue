@@ -3,10 +3,14 @@ import { ref } from "vue"
 import Navbar from "./components/Navbar.vue"
 import PublicView from "./views/PublicView.vue"
 import HomeView from "./views/HomeView.vue"
+import ProductsView from "./views/products.vue"
+import ClientsView from "./views/clients.vue"
+import ConsultantsView from "./views/consultants.vue"
 
 const isLogged = ref(false)
 const displayUserName = ref("Consultora")
 const userId = ref("")
+const currentView = ref("home")
 const API_URL = "http://localhost:3000/api"
 
 async function handleLogin(credentials: any) {
@@ -62,15 +66,23 @@ function handleLogout() {
   isLogged.value = false
   displayUserName.value = "Consultora"
   userId.value = ""
+  currentView.value = "home"
   localStorage.removeItem('token')
 }
 </script>
 
 <template>
-  <Navbar :isLogged="isLogged" @login="handleLogin" @register="handleRegister" @logout="handleLogout" />
+  <Navbar :isLogged="isLogged" :currentView="currentView" @login="handleLogin" @register="handleRegister" @logout="handleLogout" @navigate="(view) => currentView = view" />
 
   <PublicView v-if="!isLogged" />
-  <HomeView v-else :userName="displayUserName" :userId="userId" @logout="handleLogout" />
+  <div v-else class="container">
+    <transition name="fade-slide" mode="out-in">
+      <HomeView v-if="currentView === 'home'" :userName="displayUserName" :userId="userId" @logout="handleLogout" />
+      <ProductsView v-else-if="currentView === 'products'" />
+      <ClientsView v-else-if="currentView === 'clients'" />
+      <ConsultantsView v-else-if="currentView === 'consultants'" />
+    </transition>
+  </div>
 </template>
 
 <style>
