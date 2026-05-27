@@ -5,6 +5,7 @@ const props = defineProps<{
   isLogged: boolean
   userName?: string
   currentView?: string
+  role?: string
 }>()
 
 const emit = defineEmits(["login", "register", "logout", "navigate"])
@@ -79,10 +80,23 @@ function onSubmit() {
       <div v-else class="nav-logged">
         <nav ref="tabsContainer" class="nav-links">
           <div class="nav-indicator" :style="indicatorStyle"></div>
-          <button :class="['nav-link', { active: currentView === 'home' }]" @click="emit('navigate', 'home')">Inicio</button>
-          <button :class="['nav-link', { active: currentView === 'products' }]" @click="emit('navigate', 'products')">Productos</button>
-          <button :class="['nav-link', { active: currentView === 'clients' }]" @click="emit('navigate', 'clients')">Clientes</button>
-          <button :class="['nav-link', { active: currentView === 'consultants' }]" @click="emit('navigate', 'consultants')">Consultores</button>
+          
+          <template v-if="role === 'consultant'">
+            <button :class="['nav-link', { active: currentView === 'home' }]" @click="emit('navigate', 'home')">Inicio</button>
+            <button :class="['nav-link', { active: currentView === 'clients' }]" @click="emit('navigate', 'clients')">Clientes</button>
+            <button :class="['nav-link', { active: currentView === 'expert' }]" @click="emit('navigate', 'expert')">Sistema Experto</button>
+          </template>
+
+          <template v-else-if="role === 'hr'">
+            <button :class="['nav-link', { active: currentView === 'consultants' }]" @click="emit('navigate', 'consultants')">Consultores</button>
+            <button :class="['nav-link', { active: currentView === 'trainings' }]" @click="emit('navigate', 'trainings')">Capacitaciones</button>
+          </template>
+
+          <template v-else-if="role === 'dispatch'">
+            <button :class="['nav-link', { active: currentView === 'products' }]" @click="emit('navigate', 'products')">Productos/Almacén</button>
+            <button :class="['nav-link', { active: currentView === 'returns' }]" @click="emit('navigate', 'returns')">Devoluciones</button>
+            <button :class="['nav-link', { active: currentView === 'delivery_routes' }]" @click="emit('navigate', 'delivery_routes')">Rutas de Reparto</button>
+          </template>
         </nav>
         <div class="nav-user">
           <span class="user-name">{{ userName }}</span>

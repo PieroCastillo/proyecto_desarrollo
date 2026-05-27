@@ -7,12 +7,31 @@ import ProductsView from "./views/products.vue"
 import ClientsView from "./views/clients.vue"
 import ConsultantsView from "./views/consultants.vue"
 
-const isLogged = ref(false)
-const displayUserName = ref("Consultora")
-const userId = ref("")
-const currentView = ref("home")
-const API_URL = "http://localhost:3000/api"
+// IMPORTACIÓN DE LOS 4 NUEVOS MÓDULOS DEL PROYECTO
+import ExpertSystemView from "./views/ExpertSystem.vue"
+import TrainingManagerView from "./views/TrainingManager.vue"
+import ReturnsManagerView from "./views/ReturnsManager.vue"
+import RoutePlannerView from "./views/RoutePlanner.vue"
 
+const isLogged = ref(false) // Estado booleano de sesión iniciada
+const displayUserName = ref("Consultora") // Nombre de usuario para mostrar
+const userId = ref("") // ID del usuario logueado en MongoDB
+const API_URL = "http://localhost:3000/api" // Ruta base de la API del servidor
+
+const currentView = ref("home") // Rastreador de la pestaña de navegación activa
+
+// VARIABLE DE ROL REACTIVO:
+// Controla qué menú y permisos tiene activos el usuario actual en el sistema.
+// Valores admitidos: 'consultant' (Consultora), 'hr' (Recursos Humanos) o 'dispatch' (Despacho y Recepción)
+const currentRole = ref("consultant")
+
+// Función para cambiar de rol al instante desde el simulador flotante
+function selectRole(role: string, defaultView: string) {
+  currentRole.value = role
+  currentView.value = defaultView
+}
+
+// Procesa el inicio de sesión
 async function handleLogin(credentials: any) {
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
@@ -24,6 +43,8 @@ async function handleLogin(credentials: any) {
     if (response.ok) {
       const data = await response.json()
       isLogged.value = true
+      currentView.value = "home"
+      currentRole.value = "consultant" // Por defecto al loguearse entra como Consultora
       displayUserName.value = data.data.user.username
       userId.value = data.data.user.id
       localStorage.setItem('token', data.data.accessToken) 
@@ -35,6 +56,7 @@ async function handleLogin(credentials: any) {
   }
 }
 
+// Procesa el registro de nuevos usuarios
 async function handleRegister(credentials: any) {
   try {
     const response = await fetch(`${API_URL}/auth/register`, {
@@ -46,6 +68,8 @@ async function handleRegister(credentials: any) {
     const data = await response.json()
     if (response.ok) {
       isLogged.value = true
+      currentView.value = "home"
+      currentRole.value = "consultant" // Por defecto entra con el rol de consultora
       displayUserName.value = data.data.user.username
       userId.value = data.data.user.id
       localStorage.setItem('token', data.data.accessToken)
@@ -62,29 +86,159 @@ async function handleRegister(credentials: any) {
   }
 }
 
+// Cierra sesión del usuario
 function handleLogout() {
   isLogged.value = false
+  currentView.value = "home"
+  currentRole.value = "consultant"
   displayUserName.value = "Consultora"
   userId.value = ""
-  currentView.value = "home"
   localStorage.removeItem('token')
 }
 </script>
 
 <template>
-  <Navbar :isLogged="isLogged" :currentView="currentView" @login="handleLogin" @register="handleRegister" @logout="handleLogout" @navigate="(view) => currentView = view" />
+  <!-- Barra de Navegación Dinámica -->
+  <Navbar 
+    :isLogged="isLogged" 
+    :userName="displayUserName"
+    :currentView="currentView"
+    :role="currentRole"
+    @login="handleLogin" 
+    @register="handleRegister" 
+    @logout="handleLogout" 
+    @navigate="(view: string) => currentView = view"
+  />
 
+  <!-- Vista pública si no ha iniciado sesión -->
   <PublicView v-if="!isLogged" />
-  <div v-else class="container">
-    <transition name="fade-slide" mode="out-in">
-      <HomeView v-if="currentView === 'home'" :userName="displayUserName" :userId="userId" @logout="handleLogout" />
-      <ProductsView v-else-if="currentView === 'products'" />
-      <ClientsView v-else-if="currentView === 'clients'" />
-      <ConsultantsView v-else-if="currentView === 'consultants'" />
-    </transition>
+
+  <!-- Vistas privadas condicionales basadas en la pestaña activa -->
+  <div v-else>
+    <HomeView v-if="currentView === 'home'" :userName="displayUserName" :userId="userId" @logout="handleLogout" />
+    <ProductsView v-else-if="currentView === 'products'" />
+    <ClientsView v-else-if="currentView === 'clients'" />
+    <ConsultantsView v-else-if="currentView === 'consultants'" />
+    
+    <!-- Renderizado de las 4 nuevas vistas del Proyecto -->
+    <ExpertSystemView v-else-if="currentView === 'expert'" />
+    <TrainingManagerView v-else-if="currentView === 'trainings'" />
+    <ReturnsManagerView v-else-if="currentView === 'returns'" />
+    <RoutePlannerView v-else-if="currentView === 'delivery_routes'" />
+  </div>
+
+  <!-- WIDGET FLOTANTE: SIMULADOR DE ROLES (Diseño Premium Glassmorphism) -->
+  <!-- Solo se muestra si el usuario está autenticado en la aplicación -->
+  <div v-if="isLogged" class="role-simulator">
+    <div class="simulator-header">
+      <span class="simulator-title">Simulador de Roles</span>
+    </div>
+    <p class="simulator-desc">Alterna al instante de rol para probar cada módulo del proyecto:</p>
+    <div class="simulator-buttons">
+      <button 
+        :class="['sim-btn', { active: currentRole === 'consultant' }]" 
+        @click="selectRole('consultant', 'home')"
+      >
+        Consultora
+      </button>
+      <button 
+        :class="['sim-btn', { active: currentRole === 'hr' }]" 
+        @click="selectRole('hr', 'consultants')"
+      >
+        Jefe/Personal RR.HH
+      </button>
+      <button 
+        :class="['sim-btn', { active: currentRole === 'dispatch' }]" 
+        @click="selectRole('dispatch', 'products')"
+      >
+        Despacho / Almacén
+      </button>
+    </div>
   </div>
 </template>
 
 <style>
 @import "./assets/style.css";
+
+/* ESTILOS EXCLUSIVOS PARA EL WIDGET FLOTANTE DE SIMULACIÓN DE ROLES */
+.role-simulator {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 20px;
+  padding: 16px 20px;
+  width: 290px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  z-index: 999;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.role-simulator:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.simulator-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+
+
+.simulator-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary);
+}
+
+.simulator-desc {
+  font-size: 0.75rem;
+  color: var(--secondary);
+  margin: 0 0 12px;
+  line-height: 1.3;
+}
+
+.simulator-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sim-btn {
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  color: var(--primary);
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sim-btn:hover {
+  background: rgba(0, 71, 227, 0.05);
+  color: var(--accent);
+  border-color: rgba(0, 71, 227, 0.15);
+}
+
+.sim-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
 </style>
