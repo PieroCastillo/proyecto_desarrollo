@@ -6,8 +6,6 @@ import HomeView from "./views/HomeView.vue"
 import ProductsView from "./views/products.vue"
 import ClientsView from "./views/clients.vue"
 import ConsultantsView from "./views/consultants.vue"
-
-// IMPORTACIÓN DE LOS 4 NUEVOS MÓDULOS DEL PROYECTO
 import ExpertSystemView from "./views/ExpertSystem.vue"
 import TrainingManagerView from "./views/TrainingManager.vue"
 import ReturnsManagerView from "./views/ReturnsManager.vue"
@@ -20,9 +18,6 @@ const API_URL = "http://localhost:3000/api" // Ruta base de la API del servidor
 
 const currentView = ref("home") // Rastreador de la pestaña de navegación activa
 
-// VARIABLE DE ROL REACTIVO:
-// Controla qué menú y permisos tiene activos el usuario actual en el sistema.
-// Valores admitidos: 'consultant' (Consultora), 'hr' (Recursos Humanos) o 'dispatch' (Despacho y Recepción)
 const currentRole = ref("consultant")
 
 // Función para cambiar de rol al instante desde el simulador flotante
@@ -44,7 +39,7 @@ async function handleLogin(credentials: any) {
       const data = await response.json()
       isLogged.value = true
       currentView.value = "home"
-      currentRole.value = "consultant" // Por defecto al loguearse entra como Consultora
+      currentRole.value = "consultant" 
       displayUserName.value = data.data.user.username
       userId.value = data.data.user.id
       localStorage.setItem('token', data.data.accessToken) 
@@ -69,7 +64,7 @@ async function handleRegister(credentials: any) {
     if (response.ok) {
       isLogged.value = true
       currentView.value = "home"
-      currentRole.value = "consultant" // Por defecto entra con el rol de consultora
+      currentRole.value = "consultant" 
       displayUserName.value = data.data.user.username
       userId.value = data.data.user.id
       localStorage.setItem('token', data.data.accessToken)
@@ -127,8 +122,7 @@ function handleLogout() {
     <RoutePlannerView v-else-if="currentView === 'delivery_routes'" />
   </div>
 
-  <!-- WIDGET FLOTANTE: SIMULADOR DE ROLES (Diseño Premium Glassmorphism) -->
-  <!-- Solo se muestra si el usuario está autenticado en la aplicación -->
+  
   <div v-if="isLogged" class="role-simulator">
     <div class="simulator-header">
       <span class="simulator-title">Simulador de Roles</span>
@@ -160,19 +154,19 @@ function handleLogout() {
 <style>
 @import "./assets/style.css";
 
-/* ESTILOS EXCLUSIVOS PARA EL WIDGET FLOTANTE DE SIMULACIÓN DE ROLES */
+/* ESTILOS EXCLUSIVOS PARA LA SIMULACIÓN DE ROLES */
 .role-simulator {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: 16px;
+  right: 16px;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 20px;
-  padding: 16px 20px;
-  width: 290px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  padding: 12px 16px;
+  width: 220px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
   z-index: 999;
   transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -202,10 +196,10 @@ function handleLogout() {
 }
 
 .simulator-desc {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--secondary);
-  margin: 0 0 12px;
-  line-height: 1.3;
+  margin: 0 0 8px;
+  line-height: 1.25;
 }
 
 .simulator-buttons {
@@ -218,16 +212,16 @@ function handleLogout() {
   background: rgba(0, 0, 0, 0.03);
   border: 1px solid rgba(0, 0, 0, 0.04);
   color: var(--primary);
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .sim-btn:hover {
