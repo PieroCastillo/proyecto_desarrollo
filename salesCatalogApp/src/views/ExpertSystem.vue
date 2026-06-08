@@ -15,6 +15,7 @@ interface Product {
   category: string
   price: number
   stock: number
+  imagen?: string // <--- Propiedad opcional para la ruta de la imagen
 }
 
 const API_URL = "http://localhost:3000/api" // Endpoint base de la API del servidor
@@ -413,6 +414,12 @@ async function registrarPedidoRecomendado() {
             <div class="product-info-box">
               <span class="prod-cat">{{ recommendedProduct.category }}</span>
               <h4 class="prod-title">{{ recommendedProduct.name }}</h4>
+              
+              <!-- NUEVO: Mostrar imagen si existe -->
+              <div class="product-image-container" v-if="recommendedProduct.imagen">
+                <img :src="recommendedProduct.imagen" :alt="recommendedProduct.name" class="product-img" />
+              </div>
+
               <p class="prod-cost">Precio de Catálogo: <strong>S/ {{ recommendedProduct.price.toFixed(2) }}</strong></p>
               <p class="prod-stock">Stock disponible en Almacén: <span>{{ recommendedProduct.stock }} und.</span></p>
             </div>
@@ -601,6 +608,25 @@ async function registrarPedidoRecomendado() {
   color: var(--primary);
   margin: 0 0 12px;
   line-height: 1.25;
+}
+
+/* Estilos para la imagen del producto */
+.product-image-container {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+  padding: 12px;
+  background: var(--white);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.product-img {
+  max-width: 100%;
+  height: auto;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: 8px;
 }
 
 .prod-cost {

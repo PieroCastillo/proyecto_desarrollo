@@ -9,6 +9,7 @@ interface Product {
   category: string
   price: number
   stock: number
+  imagen?: string
 }
 
 const products = ref<Product[]>([])
@@ -151,6 +152,11 @@ function stockClass(stock: number) {
             <span class="category-tag">{{ p.category }}</span>
             <span :class="['stock-badge', stockClass(p.stock)]">{{ p.stock }}</span>
           </div>
+          
+          <div v-if="p.imagen" class="prod-image-container">
+            <img :src="p.imagen" :alt="p.name" class="prod-image" />
+          </div>
+
           <h4 class="prod-name">{{ p.name }}</h4>
           <p class="prod-price">S/ {{ p.price.toFixed(2) }}</p>
           <div class="stock-controls">
@@ -244,6 +250,24 @@ function stockClass(stock: number) {
   color: var(--primary);
   margin: 0;
   line-height: 1.3;
+}
+
+.prod-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 140px;
+  background: #fbfbfd;
+  border-radius: 12px;
+  padding: 8px;
+  margin: 4px 0;
+}
+
+.prod-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
 }
 
 .prod-price {
