@@ -10,6 +10,7 @@ import ExpertSystemView from "./views/ExpertSystem.vue"
 import TrainingManagerView from "./views/TrainingManager.vue"
 import ReturnsManagerView from "./views/ReturnsManager.vue"
 import RoutePlannerView from "./views/RoutePlanner.vue"
+import MyOrdersView from "./views/MyOrders.vue"
 
 const isLogged = ref(false) // Estado booleano de sesión iniciada
 const displayUserName = ref("Consultora") // Nombre de usuario para mostrar
@@ -117,6 +118,7 @@ function handleLogout() {
     
     <!-- Renderizado de las 4 nuevas vistas del Proyecto -->
     <ExpertSystemView v-else-if="currentView === 'expert'" />
+    <MyOrdersView v-else-if="currentView === 'my_orders'" :userId="userId" />
     <TrainingManagerView v-else-if="currentView === 'trainings'" />
     <ReturnsManagerView v-else-if="currentView === 'returns'" />
     <RoutePlannerView v-else-if="currentView === 'delivery_routes'" />

@@ -83,6 +83,7 @@ function onSubmit() {
           
           <template v-if="role === 'consultant'">
             <button :class="['nav-link', { active: currentView === 'home' }]" @click="emit('navigate', 'home')">Inicio</button>
+            <button :class="['nav-link', { active: currentView === 'my_orders' }]" @click="emit('navigate', 'my_orders')">Mis Ventas</button>
             <button :class="['nav-link', { active: currentView === 'clients' }]" @click="emit('navigate', 'clients')">Clientes</button>
             <button :class="['nav-link', { active: currentView === 'expert' }]" @click="emit('navigate', 'expert')">Sistema Experto</button>
           </template>

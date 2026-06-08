@@ -260,12 +260,23 @@ async function registrarPedidoRecomendado() {
   savingOrder.value = true
   try {
     const token = localStorage.getItem("token")
+    if (!token) {
+      alert("Error: No se encontró una sesión activa. Por favor, inicia sesión.")
+      return
+    }
     
     // Obtiene el payload del usuario logueado para extraer su ID de consultora
     const meRes = await fetch(`${API_URL}/auth/me`, {
       headers: { Authorization: `Bearer ${token}` }
     })
+    
     const meData = await meRes.json()
+    
+    if (!meRes.ok || !meData.data) {
+      alert(`Error de autenticación (${meRes.status}): Tu sesión es inválida o ha expirado. Vuelve a iniciar sesión.`)
+      return
+    }
+    
     const consultantId = meData.data.id
 
     // Realiza el POST a la API de pedidos
@@ -293,11 +304,13 @@ async function registrarPedidoRecomendado() {
       ocasion.value = ""
       recommendedProduct.value = null
     } else {
-      alert("Error al procesar el pedido. Verifica el stock del producto.")
+      const errData = await res.json().catch(() => ({}))
+      console.error("Error del backend en /orders:", errData)
+      alert(`Error del Servidor al registrar el pedido: ${errData.error?.message || 'Verifica el stock o los datos.'}`)
     }
   } catch (error) {
-    console.error("Error al registrar el pedido:", error)
-    alert("Error de conexión con el servidor backend.")
+    console.error("Excepción en registrarPedidoRecomendado:", error)
+    alert("Error de conexión con el servidor backend. ¿Está encendido el servidor en el puerto 3000?")
   } finally {
     savingOrder.value = false
   }
