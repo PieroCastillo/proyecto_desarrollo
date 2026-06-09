@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, nextTick } from "vue"
+import LoginModal from "./LoginModal.vue"
 
 const props = defineProps<{
   isLogged: boolean
@@ -10,10 +11,8 @@ const props = defineProps<{
 
 const emit = defineEmits(["login", "register", "logout", "navigate"])
 
-const username = ref("")
-const password = ref("")
 const menuOpen = ref(false)
-const isRegistering = ref(false)
+const showLoginModal = ref(false)
 
 const indicatorStyle = ref({
   left: '0px',
@@ -48,16 +47,14 @@ onMounted(() => {
   window.addEventListener('resize', updateIndicator)
 })
 
-function onSubmit() {
-  if (username.value && password.value) {
-    if (isRegistering.value) {
-      emit("register", { username: username.value, password: password.value })
-    } else {
-      emit("login", { username: username.value, password: password.value })
-    }
-    username.value = ""
-    password.value = ""
-  }
+function handleLogin(credentials: any) {
+  showLoginModal.value = false
+  emit("login", credentials)
+}
+
+function handleRegister(credentials: any) {
+  showLoginModal.value = false
+  emit("register", credentials)
 }
 </script>
 
@@ -69,12 +66,7 @@ function onSubmit() {
       </div>
 
       <div v-if="!isLogged" class="login-form">
-        <input v-model="username" type="text" placeholder="Usuario" class="nav-input" @keyup.enter="onSubmit" />
-        <input v-model="password" type="password" placeholder="••••••" class="nav-input" @keyup.enter="onSubmit" />
-        <button class="btn-primary" @click="onSubmit">{{ isRegistering ? 'Crear cuenta' : 'Entrar' }}</button>
-        <button class="btn-toggle" @click="isRegistering = !isRegistering">
-          {{ isRegistering ? 'Tengo cuenta' : 'Crear cuenta' }}
-        </button>
+        <button class="btn-primary" @click="showLoginModal = true">Iniciar Sesión</button>
       </div>
 
       <div v-else class="nav-logged">
@@ -105,6 +97,14 @@ function onSubmit() {
         </div>
       </div>
     </div>
+
+    <!-- Modal de Autenticación -->
+    <LoginModal 
+      :isOpen="showLoginModal" 
+      @close="showLoginModal = false"
+      @login="handleLogin"
+      @register="handleRegister"
+    ></LoginModal>
   </nav>
 </template>
 
