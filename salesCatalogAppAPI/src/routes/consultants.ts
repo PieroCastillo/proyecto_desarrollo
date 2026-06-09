@@ -10,6 +10,7 @@ import { db } from "../db";
 const consultants = new Hono();
 
 const consultantsCollection = db.collection<Consultant>("consultants");
+const ordersCollection = db.collection("orders");
 
 consultants.get("/consultants", async (c) => {
   try {
@@ -203,6 +204,72 @@ consultants.delete("/consultants/:id", async (c) => {
       },
       400,
     );
+  }
+});
+
+// HU3: Calcular efectividad, ventas y ascensos (Niveles)
+consultants.get("/consultants/performance/ranking", async (c) => {
+  try {
+    const ordersAgg = await ordersCollection.aggregate([
+      { $group: { _id: "$consultantId", totalSales: { $sum: "$total" } } }
+    ]).toArray();
+    
+    const salesMap = new Map();
+    ordersAgg.forEach(o => {
+      if (o._id) {
+        salesMap.set(o._id.toString(), o.totalSales);
+      }
+    });
+
+    const items = await consultantsCollection.find({ deletedAt: null }).toArray();
+    
+    const ranking = items.map(consultant => {
+      const sales = salesMap.get(consultant._id.toString()) || 0;
+      let level = "Bronce";
+      let nextLevel = "Plata";
+      let nextLevelGoal = 500;
+      let progress = 0;
+
+      if (sales >= 5000) {
+        level = "Diamante";
+        nextLevel = "Máximo Nivel";
+        nextLevelGoal = sales;
+        progress = 100;
+      } else if (sales >= 1500) {
+        level = "Oro";
+        nextLevel = "Diamante";
+        nextLevelGoal = 5000;
+        progress = ((sales - 1500) / (5000 - 1500)) * 100;
+      } else if (sales >= 500) {
+        level = "Plata";
+        nextLevel = "Oro";
+        nextLevelGoal = 1500;
+        progress = ((sales - 500) / (1500 - 500)) * 100;
+      } else {
+        level = "Bronce";
+        nextLevel = "Plata";
+        nextLevelGoal = 500;
+        progress = (sales / 500) * 100;
+      }
+
+      return {
+        id: consultant._id,
+        name: consultant.name,
+        zone: consultant.zone,
+        totalSales: sales,
+        level,
+        nextLevel,
+        nextLevelGoal,
+        progress: Math.min(Math.max(progress, 0), 100),
+        missingForNext: Math.max(0, nextLevelGoal - sales)
+      };
+    });
+
+    ranking.sort((a, b) => b.totalSales - a.totalSales);
+
+    return c.json({ ok: true, ranking });
+  } catch (error) {
+    return c.json({ ok: false, error: { message: "Error al calcular el ranking" } }, 400);
   }
 });
 

@@ -67,3 +67,21 @@ export type Product = {
   price: number;
   stock: number;
 };
+
+export type Training = {
+  _id?: ObjectId;
+  title: string;
+  description: string;
+  videoUrl: string;
+  instructor: string;
+  category: string;
+  points: number;
+  createdAt: Date;
+};
+
+export type TrainingParticipation = {
+  _id?: ObjectId;
+  trainingId: ObjectId;
+  consultantId: ObjectId;
+  completedAt: Date;
+};

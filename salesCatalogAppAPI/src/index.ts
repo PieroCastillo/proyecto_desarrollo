@@ -7,6 +7,7 @@ import products from './routes/products'
 import orders from './routes/orders'
 import dashboard from './routes/dashboard'
 import deliveryRoutes from './routes/routes'
+import trainings from './routes/trainings'
 
 import { jwtMiddleware } from './middleware/auth'
 
@@ -22,5 +23,6 @@ app.route('/api', products)
 app.route('/api', orders)
 app.route('/api', dashboard)
 app.route('/api', deliveryRoutes)
+app.route('/api', trainings)
 
 export default app
