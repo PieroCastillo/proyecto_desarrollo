@@ -1,7 +1,8 @@
 {
   "name": "salesCatalogAppAPI",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --hot src/index.ts",
+    "test": "vitest"
   },
   "dependencies": {
     "argon2": "^0.44.0",
