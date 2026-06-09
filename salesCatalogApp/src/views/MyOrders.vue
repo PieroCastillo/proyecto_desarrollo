@@ -24,6 +24,7 @@ const props = defineProps<{
 
 const API_URL = "http://localhost:3000/api"
 const orders = ref<Order[]>([])
+const clientsMap = ref<Record<string, string>>({})
 const loading = ref(true)
 
 onMounted(async () => {
@@ -31,12 +32,29 @@ onMounted(async () => {
     const token = localStorage.getItem("token")
     if (!token || !props.userId) return
 
-    const res = await fetch(`${API_URL}/orders?consultantId=${props.userId}`, {
+    // Cargar historial de pedidos
+    const ordersPromise = fetch(`${API_URL}/orders?consultantId=${props.userId}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     
-    if (res.ok) {
-      const data = await res.json()
+    // Cargar lista de clientes para obtener sus nombres
+    const clientsPromise = fetch(`${API_URL}/clients`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    const [resOrders, resClients] = await Promise.all([ordersPromise, clientsPromise])
+    
+    if (resClients.ok) {
+      const clientsData = await resClients.json()
+      if (clientsData.items) {
+        clientsData.items.forEach((c: any) => {
+          clientsMap.value[c._id] = c.name
+        })
+      }
+    }
+
+    if (resOrders.ok) {
+      const data = await resOrders.json()
       orders.value = data.items || []
     }
   } catch (error) {
@@ -111,6 +129,7 @@ function getStatusLabel(status: string) {
             <tr>
               <th>ID Pedido</th>
               <th>Fecha y Hora</th>
+              <th>Cliente</th>
               <th>Productos (Cant.)</th>
               <th>Estado</th>
               <th class="text-right">Monto Total</th>
@@ -120,6 +139,7 @@ function getStatusLabel(status: string) {
             <tr v-for="order in orders" :key="order._id">
               <td class="id-cell">#{{ order._id.slice(-6).toUpperCase() }}</td>
               <td>{{ formatDate(order.createdAt) }}</td>
+              <td class="client-name">{{ clientsMap[order.clientId] || 'Cliente Desconocido' }}</td>
               <td>
                 <div class="items-list">
                   <span v-for="(item, i) in order.items" :key="i" class="item-tag">
@@ -259,6 +279,11 @@ function getStatusLabel(status: string) {
   font-family: monospace;
   font-weight: 600;
   color: var(--secondary) !important;
+}
+
+.client-name {
+  font-weight: 600;
+  color: var(--primary);
 }
 
 .items-list {

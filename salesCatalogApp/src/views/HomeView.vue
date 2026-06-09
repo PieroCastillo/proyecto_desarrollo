@@ -7,6 +7,7 @@ interface Product {
   price: number
   stock: number
   category: string
+  imagen?: string
 }
 
 const props = defineProps<{
@@ -20,20 +21,24 @@ const API_URL = "http://localhost:3000/api"
 const products = ref<Product[]>([])
 const loading = ref(true)
 const saldo = ref(1250.40)
-const defaultClientId = ref<string | null>(null)
+
+interface Client {
+  _id: string
+  name: string
+}
+const clients = ref<Client[]>([])
+const selectedClient = ref<string>("")
 
 onMounted(async () => {
   try {
     const token = localStorage.getItem("token")
     const headers = { Authorization: `Bearer ${token}` }
 
-    // Fetch default client for order creation
+    // Fetch clients for order creation
     const clientsRes = await fetch(`${API_URL}/clients`, { headers })
     if (clientsRes.ok) {
       const clientsData = await clientsRes.json()
-      if (clientsData.items?.length > 0) {
-        defaultClientId.value = clientsData.items[0]._id
-      }
+      clients.value = clientsData.items ?? []
     }
 
     // Fetch products
@@ -46,8 +51,8 @@ onMounted(async () => {
 })
 
 async function addToCart(id: string, name: string) {
-  if (!defaultClientId.value) {
-    alert("Debes registrar al menos un cliente antes de crear un pedido.")
+  if (!selectedClient.value) {
+    alert("¡Espera! Debes seleccionar a qué Cliente le estás vendiendo antes de añadir un producto.")
     return
   }
 
@@ -60,7 +65,7 @@ async function addToCart(id: string, name: string) {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
-        clientId: defaultClientId.value,
+        clientId: selectedClient.value,
         consultantId: props.userId,
         items: [{ productId: id, quantity: 1 }]
       }),
@@ -90,7 +95,18 @@ async function addToCart(id: string, name: string) {
         </div>
       </div>
 
-      <h2 class="section-title">Realizar pedido</h2>
+      <div class="catalog-header">
+        <h2 class="section-title">Catálogo de Productos</h2>
+        <div class="client-selector">
+          <label>¿A quién le vendemos hoy?</label>
+          <select v-model="selectedClient" class="nav-input select-client">
+            <option value="">-- Selecciona un Cliente --</option>
+            <option v-for="c in clients" :key="c._id" :value="c._id">
+              {{ c.name }}
+            </option>
+          </select>
+        </div>
+      </div>
 
       <div v-if="loading" class="product-grid">
         <div v-for="i in 4" :key="i" class="skeleton-card" />
@@ -102,10 +118,17 @@ async function addToCart(id: string, name: string) {
 
       <div v-else class="product-grid">
         <div v-for="p in products" :key="p._id" class="product-card">
+          <!-- Mostrar imagen si existe, sino placeholder -->
+          <div v-if="p.imagen" class="prod-image-container">
+            <img :src="p.imagen" :alt="p.name" class="prod-image" />
+          </div>
+          <div v-else class="product-image-placeholder">
+            <span class="img-icon">🛍️</span>
+          </div>
           <span class="category-tag">{{ p.category }}</span>
           <h4 class="prod-name">{{ p.name }}</h4>
           <p class="prod-price">S/ {{ p.price.toFixed(2) }}</p>
-          <button class="btn-add" @click="addToCart(p._id, p.name)">Añadir al pedido</button>
+          <button class="btn-add" @click="addToCart(p._id, p.name)">Comprar / Añadir a orden</button>
         </div>
       </div>
     </div>
@@ -179,7 +202,39 @@ async function addToCart(id: string, name: string) {
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--primary);
+  margin: 0;
+}
+
+.catalog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.client-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.client-selector label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--secondary);
+}
+
+.select-client {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.1);
+  background-color: var(--white);
+  min-width: 200px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .product-grid {
@@ -202,6 +257,40 @@ async function addToCart(id: string, name: string) {
 .product-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 14px 44px rgba(0,0,0,0.06);
+}
+
+.product-image-placeholder {
+  background: var(--light);
+  height: 160px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+.prod-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 160px;
+  background: #fbfbfd;
+  border-radius: 12px;
+  padding: 8px;
+  margin-bottom: 12px;
+}
+
+.prod-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+.img-icon {
+  font-size: 3rem;
+  opacity: 0.8;
 }
 
 .category-tag {
