@@ -204,9 +204,10 @@ auth.get("/auth/me", async (c) => {
 
     const token = authorization.slice(7);
 
-    const payload = await verify(token, JWT_SECRET);
+    // Hono v4 requiere especificar obligatoriamente el algoritmo por seguridad
+    const payload = await verify(token, JWT_SECRET, "HS256");
 
-    if (!payload.sub || !ObjectId.isValid(payload.sub)) {
+    if (!payload.sub || !ObjectId.isValid(payload.sub as string)) {
       throw new Error();
     }
 
@@ -235,13 +236,14 @@ auth.get("/auth/me", async (c) => {
         role: user.role,
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("DEBUG /auth/me error:", error);
     return c.json(
       {
         ok: false,
         error: {
           code: "BAD_REQUEST",
-          message: "bad request",
+          message: error instanceof Error ? error.message : "bad request",
         },
       },
       400,

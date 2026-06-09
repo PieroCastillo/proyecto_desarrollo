@@ -23,13 +23,19 @@ type UpdateOrderStatusBody = {
 orders.get("/orders", async (c) => {
   try {
     const status = c.req.query("status");
+    const consultantId = c.req.query("consultantId");
+    
     const filter: Record<string, unknown> = {};
 
     if (status) {
       filter.status = status;
     }
+    
+    if (consultantId && ObjectId.isValid(consultantId)) {
+      filter.consultantId = new ObjectId(consultantId);
+    }
 
-    const items = await ordersCollection.find(filter).toArray();
+    const items = await ordersCollection.find(filter).sort({ createdAt: -1 }).toArray();
 
     return c.json({
       status,

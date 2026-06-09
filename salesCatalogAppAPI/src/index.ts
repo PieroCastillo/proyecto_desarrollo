@@ -8,9 +8,12 @@ import orders from './routes/orders'
 import dashboard from './routes/dashboard'
 import deliveryRoutes from './routes/routes'
 
+import { jwtMiddleware } from './middleware/auth'
+
 const app = new Hono()
 
 app.use('/api/*', cors())
+app.use('/api/*', jwtMiddleware)
 
 app.route('/api', auth)
 app.route('/api', clients)
