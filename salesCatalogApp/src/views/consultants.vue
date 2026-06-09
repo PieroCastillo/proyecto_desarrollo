@@ -22,6 +22,46 @@ const editTarget = ref<Consultant | null>(null)
 const form = ref({ name: "", dni: "", phone: "", zone: "" })
 const saving = ref(false)
 
+const activeTab = ref("directory")
+
+interface Ranking {
+  id: string
+  name: string
+  zone: string
+  totalSales: number
+  level: string
+  nextLevel: string
+  nextLevelGoal: number
+  progress: number
+  missingForNext: number
+}
+const rankings = ref<Ranking[]>([])
+const loadingRanking = ref(true)
+
+async function fetchRanking() {
+  loadingRanking.value = true
+  try {
+    const token = localStorage.getItem("token")
+    const res = await fetch(`${API_URL}/consultants/performance/ranking`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (res.ok) {
+      const data = await res.json()
+      rankings.value = data.ranking ?? []
+    }
+  } catch (err) {
+    console.error("Error al cargar ranking", err)
+  } finally {
+    loadingRanking.value = false
+  }
+}
+
+watch(activeTab, (newTab) => {
+  if (newTab === 'performance' && rankings.value.length === 0) {
+    fetchRanking()
+  }
+})
+
 let searchTimeout: ReturnType<typeof setTimeout>
 
 onMounted(fetchConsultants)
@@ -104,14 +144,20 @@ const totalPages = () => Math.ceil(total.value / 10)
       <div class="page-header">
         <div>
           <h1 class="page-title">Consultores</h1>
-          <p class="page-sub">{{ total }} en total</p>
+          <p class="page-sub">Directorio y Efectividad</p>
         </div>
-        <button class="btn-add" @click="openCreate">+ Nuevo consultor</button>
+        <button v-if="activeTab === 'directory'" class="btn-add" @click="openCreate">+ Nuevo consultor</button>
       </div>
 
-      <div class="toolbar">
-        <input v-model="search" class="search-input" placeholder="Buscar por nombre…" />
+      <div class="tabs-container">
+        <button :class="['tab-btn', { active: activeTab === 'directory' }]" @click="activeTab = 'directory'">Directorio</button>
+        <button :class="['tab-btn', { active: activeTab === 'performance' }]" @click="activeTab = 'performance'">Ascensos y Efectividad</button>
       </div>
+
+      <div v-if="activeTab === 'directory'">
+        <div class="toolbar">
+          <input v-model="search" class="search-input" placeholder="Buscar por nombre…" />
+        </div>
 
       <div v-if="showForm" class="form-card">
         <h3 class="form-title">{{ editTarget ? "Editar consultor" : "Nuevo consultor" }}</h3>
@@ -175,10 +221,43 @@ const totalPages = () => Math.ceil(total.value / 10)
         </table>
       </div>
 
-      <div v-if="totalPages() > 1" class="pagination">
-        <button :disabled="page === 1" class="page-btn" @click="page--">←</button>
-        <span class="page-info">{{ page }} / {{ totalPages() }}</span>
-        <button :disabled="page >= totalPages()" class="page-btn" @click="page++">→</button>
+        <div v-if="totalPages() > 1" class="pagination">
+          <button :disabled="page === 1" class="page-btn" @click="page--">←</button>
+          <span class="page-info">{{ page }} / {{ totalPages() }}</span>
+          <button :disabled="page >= totalPages()" class="page-btn" @click="page++">→</button>
+        </div>
+      </div>
+
+      <!-- Dashboard de Rendimiento (HU3) -->
+      <div v-else-if="activeTab === 'performance'">
+        <div v-if="loadingRanking" class="skeletons">
+          <div v-for="i in 3" :key="i" class="skeleton-row" />
+        </div>
+        <div v-else class="ranking-grid">
+          <div v-for="r in rankings" :key="r.id" class="ranking-card">
+            <div class="ranking-header">
+              <h3 class="r-name">{{ r.name }}</h3>
+              <span :class="['r-badge', r.level.toLowerCase().replace('á', 'a').replace('é', 'e')]">{{ r.level }}</span>
+            </div>
+            <p class="r-zone">Zona: {{ r.zone }}</p>
+            <div class="r-sales-info">
+              <span class="r-total">Ventas Totales: S/ {{ r.totalSales.toFixed(2) }}</span>
+            </div>
+            
+            <div class="r-progress-container" v-if="r.level !== 'Diamante'">
+              <div class="r-progress-labels">
+                <span>Meta para {{ r.nextLevel }}</span>
+                <span>Faltan S/ {{ r.missingForNext.toFixed(2) }}</span>
+              </div>
+              <div class="r-progress-track">
+                <div class="r-progress-bar" :style="{ width: r.progress + '%' }"></div>
+              </div>
+            </div>
+            <div class="r-progress-container success" v-else>
+              <p class="max-level-text">¡Ha alcanzado el nivel máximo de la compañía!</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -218,6 +297,41 @@ const totalPages = () => Math.ceil(total.value / 10)
 }
 
 .btn-add:hover { background: #c2185b; }
+
+.tabs-container {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--secondary);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.tab-btn:hover { color: var(--primary); }
+
+.tab-btn.active {
+  color: var(--accent);
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -9px; left: 0;
+  width: 100%; height: 3px;
+  background: var(--accent);
+  border-radius: 3px 3px 0 0;
+}
 
 <style scoped>
 .toolbar {
@@ -407,5 +521,107 @@ const totalPages = () => Math.ceil(total.value / 10)
   color: var(--secondary);
   padding: 80px 20px;
   font-size: 1.1rem;
+}
+
+/* Ranking Dashboard */
+.ranking-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  margin-top: 12px;
+}
+
+.ranking-card {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.02);
+  transition: transform 0.2s;
+}
+
+.ranking-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.08);
+}
+
+.ranking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.r-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--primary);
+  line-height: 1.2;
+}
+
+.r-badge {
+  padding: 4px 12px;
+  border-radius: 980px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.r-badge.bronce { background: #ffebd2; color: #a5682a; }
+.r-badge.plata { background: #f1f5f9; color: #64748b; }
+.r-badge.oro { background: #fef08a; color: #854d0e; }
+.r-badge.diamante { background: #e0f2fe; color: #0284c7; }
+
+.r-zone { margin: 0 0 16px; color: var(--secondary); font-size: 0.9rem; }
+
+.r-sales-info {
+  margin-bottom: 24px;
+  background: rgba(0,0,0,0.02);
+  padding: 12px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.r-total {
+  font-weight: 800;
+  font-size: 1.3rem;
+  color: #e91e63;
+}
+
+.r-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--secondary);
+  margin-bottom: 8px;
+}
+
+.r-progress-track {
+  height: 12px;
+  background: var(--light);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.r-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  border-radius: 99px;
+  transition: width 1s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.max-level-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #10b981;
+  text-align: center;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 12px;
+  border-radius: 12px;
+  margin: 0;
 }
 </style>

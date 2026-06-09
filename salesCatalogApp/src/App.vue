@@ -119,7 +119,7 @@ function handleLogout() {
     <!-- Renderizado de las 4 nuevas vistas del Proyecto -->
     <ExpertSystemView v-else-if="currentView === 'expert'" />
     <MyOrdersView v-else-if="currentView === 'my_orders'" :userId="userId" />
-    <TrainingManagerView v-else-if="currentView === 'trainings'" />
+    <TrainingManagerView v-else-if="currentView === 'trainings'" :role="currentRole" />
     <ReturnsManagerView v-else-if="currentView === 'returns'" />
     <RoutePlannerView v-else-if="currentView === 'delivery_routes'" />
   </div>
