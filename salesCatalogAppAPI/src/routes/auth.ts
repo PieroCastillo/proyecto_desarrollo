@@ -212,7 +212,7 @@ auth.get("/auth/me", async (c) => {
     }
 
     const user = await users.findOne({
-      _id: new ObjectId(payload.sub),
+      _id: new ObjectId(payload.sub as string),
     });
 
     if (!user) {
