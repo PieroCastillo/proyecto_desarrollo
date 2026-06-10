@@ -10,7 +10,7 @@ async function run() {
   const db = mongo.db("app");
 
   const username = "maria_lopez";
-  const passwordHash = await hash("1234"); // Contraseña: 1234
+  const passwordHash = await hash("1234");
 
   // Crear en tabla users
   const userResult = await db.collection("users").insertOne({
@@ -21,7 +21,6 @@ async function run() {
 
   const userId = userResult.insertedId;
 
-  // Crear en tabla consultants para que le aparezca a RR.HH en el Dropdown
   await db.collection("consultants").insertOne({
     _id: userId, // Usamos el mismo ID para mantener consistencia
     name: "Maria Lopez",

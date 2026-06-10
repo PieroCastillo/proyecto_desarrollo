@@ -6,7 +6,6 @@ async function seedTrainings() {
 
     const trainings = db.collection("trainings");
 
-    // Limpiar capacitaciones antiguas
     await trainings.deleteMany({});
 
     const initialTrainings = [
