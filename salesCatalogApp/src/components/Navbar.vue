@@ -78,17 +78,20 @@ function handleRegister(credentials: any) {
             <button :class="['nav-link', { active: currentView === 'my_orders' }]" @click="emit('navigate', 'my_orders')">Mis Ventas</button>
             <button :class="['nav-link', { active: currentView === 'clients' }]" @click="emit('navigate', 'clients')">Clientes</button>
             <button :class="['nav-link', { active: currentView === 'expert' }]" @click="emit('navigate', 'expert')">Sistema Experto</button>
+            <button :class="['nav-link', { active: currentView === 'statistics' }]" @click="emit('navigate', 'statistics')">Estadísticas</button>
           </template>
 
           <template v-else-if="role === 'hr'">
             <button :class="['nav-link', { active: currentView === 'consultants' }]" @click="emit('navigate', 'consultants')">Consultores</button>
             <button :class="['nav-link', { active: currentView === 'trainings' }]" @click="emit('navigate', 'trainings')">Capacitaciones</button>
+            <button :class="['nav-link', { active: currentView === 'statistics' }]" @click="emit('navigate', 'statistics')">Estadísticas</button>
           </template>
 
           <template v-else-if="role === 'dispatch'">
             <button :class="['nav-link', { active: currentView === 'products' }]" @click="emit('navigate', 'products')">Productos/Almacén</button>
             <button :class="['nav-link', { active: currentView === 'returns' }]" @click="emit('navigate', 'returns')">Devoluciones</button>
             <button :class="['nav-link', { active: currentView === 'delivery_routes' }]" @click="emit('navigate', 'delivery_routes')">Rutas de Reparto</button>
+            <button :class="['nav-link', { active: currentView === 'statistics' }]" @click="emit('navigate', 'statistics')">Estadísticas</button>
           </template>
         </nav>
         <div class="nav-user">

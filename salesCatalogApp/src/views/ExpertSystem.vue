@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from "vue"
+import { ref, onMounted, watch, computed, inject } from "vue"
+
+const showNotification = inject<(msg: string, type?: string) => void>('showNotification')
 
 // Definición de las interfaces de datos para asegurar el tipado de TypeScript
 interface Client {
@@ -18,7 +20,7 @@ interface Product {
   imagen?: string // <--- Propiedad opcional para la ruta de la imagen
 }
 
-const API_URL = "http://localhost:3000/api" // Endpoint base de la API del servidor
+const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api" // Endpoint base de la API del servidor
 
 // Estados reactivos para la carga de datos desde el backend
 const clients = ref<Client[]>([]) // Listado de clientes reales cargados de la base de datos
@@ -120,11 +122,11 @@ const isProcessing = ref(false) // Controla el estado visual de carga y razonami
 // Función que emula la consulta de reglas lógicas en el Sistema Experto
 async function procesarRecomendacion() {
   if (!selectedClient.value) {
-    alert("Por favor, selecciona un Cliente bajo consultoría primero.")
+    showNotification?.("Por favor, selecciona un Cliente bajo consultoría primero.", "warning")
     return
   }
   if (!tipoPiel.value || !categoriaInteres.value || !preocupacion.value || !ocasion.value) {
-    alert("Por favor, responde todas las características antes de obtener la recomendación.")
+    showNotification?.("Por favor, responde todas las características antes de obtener la recomendación.", "warning")
     return
   }
 
@@ -249,11 +251,21 @@ function evaluarRecomendacion() {
 // Envía el pedido recomendado directamente a la API para registrar la venta
 async function registrarPedidoRecomendado() {
   if (!selectedClient.value) {
-    alert("Por favor, selecciona un cliente para registrar el pedido.")
+    showNotification?.("Por favor, selecciona un cliente para registrar el pedido.", "warning")
     return
   }
   if (!recommendedProduct.value) {
-    alert("No hay ningún producto recomendado activo.")
+    showNotification?.("No hay ningún producto recomendado activo.", "warning")
+    return
+  }
+
+  const qty = Number(quantity.value)
+  if (qty <= 0 || !Number.isInteger(qty)) {
+    showNotification?.("La cantidad debe ser un número entero mayor a 0.", "error")
+    return
+  }
+  if (qty > 1000) {
+    showNotification?.("La cantidad máxima permitida es 1000 unidades.", "warning")
     return
   }
 
@@ -261,7 +273,7 @@ async function registrarPedidoRecomendado() {
   try {
     const token = localStorage.getItem("token")
     if (!token) {
-      alert("Error: No se encontró una sesión activa. Por favor, inicia sesión.")
+      showNotification?.("Error: No se encontró una sesión activa. Por favor, inicia sesión.", "error")
       return
     }
     
@@ -273,7 +285,7 @@ async function registrarPedidoRecomendado() {
     const meData = await meRes.json()
     
     if (!meRes.ok || !meData.data) {
-      alert(`Error de autenticación (${meRes.status}): Tu sesión es inválida o ha expirado. Vuelve a iniciar sesión.`)
+      showNotification?.(`Error de autenticación (${meRes.status}): Tu sesión es inválida o ha expirado. Vuelve a iniciar sesión.`, "error")
       return
     }
     
@@ -289,12 +301,12 @@ async function registrarPedidoRecomendado() {
       body: JSON.stringify({
         clientId: selectedClient.value,
         consultantId: consultantId,
-        items: [{ productId: recommendedProduct.value._id, quantity: quantity.value }]
+        items: [{ productId: recommendedProduct.value._id, quantity: qty }]
       })
     })
 
     if (res.ok) {
-      alert(`¡Pedido registrado con éxito! Demanda programada:\n- Producto: ${recommendedProduct.value.name}\n- Cantidad: ${quantity.value} und.\n- Renovación sugerida: Cada ${renewalDays.value} días.`);
+      showNotification?.(`¡Pedido registrado con éxito!\nProducto: ${recommendedProduct.value.name}\nCantidad: ${qty} und.`, "success")
       
       // Limpia el formulario
       selectedClient.value = ""
@@ -306,11 +318,11 @@ async function registrarPedidoRecomendado() {
     } else {
       const errData = await res.json().catch(() => ({}))
       console.error("Error del backend en /orders:", errData)
-      alert(`Error del Servidor al registrar el pedido: ${errData.error?.message || 'Verifica el stock o los datos.'}`)
+      showNotification?.(`Error al registrar el pedido: ${errData.error?.message || 'Verifica el stock o los datos.'}`, "error")
     }
   } catch (error) {
     console.error("Excepción en registrarPedidoRecomendado:", error)
-    alert("Error de conexión con el servidor backend. ¿Está encendido el servidor en el puerto 3000?")
+    showNotification?.("Error de conexión con el servidor backend.", "error")
   } finally {
     savingOrder.value = false
   }

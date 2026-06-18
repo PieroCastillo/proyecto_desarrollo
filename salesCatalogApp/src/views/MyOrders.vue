@@ -22,7 +22,7 @@ const props = defineProps<{
   userId: string
 }>()
 
-const API_URL = "http://localhost:3000/api"
+const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 const orders = ref<Order[]>([])
 const clientsMap = ref<Record<string, string>>({})
 const loading = ref(true)

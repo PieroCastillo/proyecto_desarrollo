@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
+import { ref, onMounted, inject } from "vue"
 
 interface Product {
   _id: string
@@ -17,7 +17,8 @@ const props = defineProps<{
 
 const emit = defineEmits(["logout"])
 
-const API_URL = "http://localhost:3000/api"
+const showNotification = inject<(msg: string, type?: string) => void>('showNotification')
+const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 const products = ref<Product[]>([])
 const loading = ref(true)
 const saldo = ref(1250.40)
@@ -52,7 +53,7 @@ onMounted(async () => {
 
 async function addToCart(id: string, name: string) {
   if (!selectedClient.value) {
-    alert("¡Espera! Debes seleccionar a qué Cliente le estás vendiendo antes de añadir un producto.")
+    showNotification?.("¡Espera! Debes seleccionar a qué Cliente le estás vendiendo antes de añadir un producto.", "warning")
     return
   }
 
@@ -71,12 +72,12 @@ async function addToCart(id: string, name: string) {
       }),
     })
     if (res.ok) {
-      alert(`✓ ${name} añadido al pedido`)
+      showNotification?.(`✓ ${name} añadido al pedido`, "success")
     } else {
-      alert("Error de validación al crear el pedido")
+      showNotification?.("Error de validación al crear el pedido", "error")
     }
   } catch {
-    alert("Error al procesar el pedido")
+    showNotification?.("Error al procesar el pedido", "error")
   }
 }
 </script>

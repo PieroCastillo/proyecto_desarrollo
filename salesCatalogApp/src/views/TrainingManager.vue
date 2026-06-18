@@ -14,7 +14,7 @@ interface Training {
   completed: boolean
 }
 
-const API_URL = "http://localhost:3000/api"
+const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 const trainings = ref<Training[]>([])
 const loading = ref(true)
 const processingId = ref<string | null>(null)

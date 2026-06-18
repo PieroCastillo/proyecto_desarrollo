@@ -59,22 +59,32 @@ products.post("/products", async (c) => {
     const category = body.category?.trim();
     const price = Number(body.price);
     const stock = Number(body.stock);
+    const imagen = body.imagen?.trim();
 
     if (
       !name ||
       !category ||
       Number.isNaN(price) ||
-      Number.isNaN(stock)
+      Number.isNaN(stock) ||
+      price < 0 ||
+      stock < 0 ||
+      price > 1000000 ||
+      stock > 1000000
     ) {
       throw new Error();
     }
 
-    const result = await productsCollection.insertOne({
+    const productDoc: any = {
       name,
       category,
       price,
       stock,
-    });
+    };
+    if (imagen) {
+      productDoc.imagen = imagen;
+    }
+
+    const result = await productsCollection.insertOne(productDoc);
 
     return c.json(
       {
@@ -83,6 +93,7 @@ products.post("/products", async (c) => {
         category,
         price,
         stock,
+        ...(imagen ? { imagen } : {}),
       },
       201
     );
@@ -114,10 +125,14 @@ products.patch("/products/:id/stock", async (c) => {
       throw new Error();
     }
 
+    const filter: any = { _id: new ObjectId(id) };
+    if (delta < 0) {
+      // Ensure current stock is at least the absolute value of the decrement
+      filter.stock = { $gte: -delta };
+    }
+
     const result = await productsCollection.findOneAndUpdate(
-      {
-        _id: new ObjectId(id),
-      },
+      filter,
       {
         $inc: {
           stock: delta,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue"
 
-const API_URL = "http://localhost:3000/api"
+const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 
 interface Consultant {
   _id: string

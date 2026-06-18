@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue"
+import { ref, onMounted, computed, inject } from "vue"
 
-const API_URL = "http://localhost:3000/api"
+const showNotification = inject<(msg: string, type?: string) => void>('showNotification')
+const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 
 interface Product {
   _id: string
@@ -18,7 +19,7 @@ const showForm = ref(false)
 const filterCategory = ref("")
 const filterStock = ref("")
 
-const form = ref({ name: "", category: "", price: "", stock: "" })
+const form = ref({ name: "", category: "", price: "", stock: "", imagen: "" })
 const saving = ref(false)
 
 onMounted(fetchProducts)
@@ -40,7 +41,24 @@ async function fetchProducts() {
 }
 
 async function createProduct() {
-  if (!form.value.name || !form.value.category || !form.value.price || !form.value.stock) return
+  if (!form.value.name || !form.value.category || form.value.price === "" || form.value.stock === "") {
+    showNotification?.("Todos los campos obligatorios deben estar completos.", "warning")
+    return
+  }
+  
+  const priceVal = Number(form.value.price)
+  const stockVal = Number(form.value.stock)
+
+  if (priceVal < 0 || stockVal < 0 || !Number.isInteger(stockVal)) {
+    showNotification?.("El precio y el stock deben ser mayores o iguales a 0. El stock debe ser entero.", "error")
+    return
+  }
+
+  if (priceVal > 1000000 || stockVal > 1000000) {
+    showNotification?.("Valores de precio o stock excesivamente grandes (límite 1,000,000).", "error")
+    return
+  }
+
   saving.value = true
   try {
     const token = localStorage.getItem("token")
@@ -53,31 +71,53 @@ async function createProduct() {
       body: JSON.stringify({
         name: form.value.name,
         category: form.value.category,
-        price: Number(form.value.price),
-        stock: Number(form.value.stock),
+        price: priceVal,
+        stock: stockVal,
+        imagen: form.value.imagen || undefined,
       }),
     })
     if (res.ok) {
       showForm.value = false
-      form.value = { name: "", category: "", price: "", stock: "" }
+      form.value = { name: "", category: "", price: "", stock: "", imagen: "" }
+      showNotification?.("¡Producto creado con éxito!", "success")
       await fetchProducts()
+    } else {
+      showNotification?.("Error al crear el producto. Revisa los datos.", "error")
     }
+  } catch {
+    showNotification?.("Error de red al crear el producto.", "error")
   } finally {
     saving.value = false
   }
 }
 
 async function adjustStock(id: string, delta: number) {
+  const prod = products.value.find(p => p._id === id)
+  if (prod && prod.stock + delta < 0) {
+    showNotification?.("No se puede reducir el stock por debajo de 0.", "warning")
+    return
+  }
+
   const token = localStorage.getItem("token")
-  await fetch(`${API_URL}/products/${id}/stock`, {
-    method: "PATCH",
-    headers: { 
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify({ delta }),
-  })
-  await fetchProducts()
+  try {
+    const res = await fetch(`${API_URL}/products/${id}/stock`, {
+      method: "PATCH",
+      headers: { 
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ delta }),
+    })
+    
+    if (res.ok) {
+      showNotification?.("Stock actualizado con éxito.", "success")
+      await fetchProducts()
+    } else {
+      showNotification?.("Error al actualizar el stock en el servidor.", "error")
+    }
+  } catch {
+    showNotification?.("Error de red al actualizar stock.", "error")
+  }
 }
 
 const categories = computed(() => [...new Set(products.value.map(p => p.category))])
@@ -120,6 +160,10 @@ function stockClass(stock: number) {
             <label>Stock</label>
             <input v-model="form.stock" type="number" placeholder="0" />
           </div>
+          <div class="field">
+            <label>URL de la Imagen (Opcional)</label>
+            <input v-model="form.imagen" placeholder="https://ejemplo.com/imagen.jpg" />
+          </div>
         </div>
         <button class="btn-save" :disabled="saving" @click="createProduct">
           {{ saving ? "Guardando…" : "Guardar producto" }}
@@ -160,7 +204,7 @@ function stockClass(stock: number) {
           <h4 class="prod-name">{{ p.name }}</h4>
           <p class="prod-price">S/ {{ p.price.toFixed(2) }}</p>
           <div class="stock-controls">
-            <button class="ctrl-btn" @click="adjustStock(p._id, -1)">−</button>
+            <button class="ctrl-btn" :disabled="p.stock <= 0" @click="adjustStock(p._id, -1)">−</button>
             <span class="ctrl-label">Stock</span>
             <button class="ctrl-btn" @click="adjustStock(p._id, 1)">+</button>
           </div>
@@ -303,6 +347,12 @@ function stockClass(stock: number) {
 
 .ctrl-btn:hover {
   background: var(--border);
+}
+
+.ctrl-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: var(--light);
 }
 
 .ctrl-label {
