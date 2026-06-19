@@ -1,7 +1,9 @@
 import { MongoClient } from "mongodb";
 import { config } from "dotenv";
 
-config();
+if (process.env.NODE_ENV !== "production") {
+  config();
+}
 
 const MONGO_URI = process.env.MONGO_URI;
 const DB_NAME = process.env.MONGO_DB || "app";
