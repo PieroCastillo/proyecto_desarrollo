@@ -8,11 +8,12 @@ import orders from './routes/orders'
 import dashboard from './routes/dashboard'
 import deliveryRoutes from './routes/routes'
 import trainings from './routes/trainings'
-import { db } from './db'
+import { db, connectDB } from './db'
 
 import { jwtMiddleware } from './middleware/auth'
 
 const app = new Hono()
+await connectDB()
 
 app.get('/', async (c) => {
   const startedAt = new Date()
