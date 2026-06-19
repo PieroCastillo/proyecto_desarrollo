@@ -1,11 +1,15 @@
 {
   "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
     "strict": true,
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
     "types": ["node"],
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "ignoreDeprecations": "6.0"
-  }
+  },
+  "include": ["api/**/*.ts", "src/**/*.ts", "vitest.config.ts"]
 }

@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import { cors } from 'hono/cors'
 import auth from './routes/auth'
 import clients from './routes/clients'
@@ -13,39 +13,36 @@ import { db, connectDB } from './db'
 import { jwtMiddleware } from './middleware/auth'
 
 const app = new Hono()
-async function main() {
-  await connectDB();
-}
 
-main();
+app.use('/api/*', cors())
 
-app.get('/', async (c) => {
-  const startedAt = new Date()
-  const checks: { name: string; ok: boolean; detail: string }[] = []
-  let dbOk = false
-
+app.use('*', async (c, next) => {
   try {
-    await db.command({ ping: 1 })
-    dbOk = true
-    checks.push({ name: 'MongoDB', ok: true, detail: 'Conexion activa' })
+    await connectDB()
+    await next()
   } catch (error) {
-    checks.push({ name: 'MongoDB', ok: false, detail: error instanceof Error ? error.message : 'Error desconocido' })
-  }
+    const message = error instanceof Error ? error.message : 'No se pudo conectar a la base de datos'
 
-  const collections = ['users', 'clients', 'consultants', 'products', 'orders', 'trainings']
-  if (dbOk) {
-    for (const collection of collections) {
-      try {
-        const count = await db.collection(collection).countDocuments()
-        checks.push({ name: collection, ok: true, detail: `${count} documentos` })
-      } catch {
-        checks.push({ name: collection, ok: false, detail: 'No se pudo leer' })
-      }
+    if (c.req.path === '/' || c.req.path === '/api') {
+      return c.html(renderStatusPage({
+        ok: false,
+        startedAt: new Date(),
+        checks: [{ name: 'MongoDB', ok: false, detail: message }],
+      }), 503)
     }
-  }
 
-  const ok = checks.every((check) => check.ok)
-  const html = `<!doctype html>
+    return c.json({ ok: false, error: { code: 'DB_UNAVAILABLE', message } }, 503)
+  }
+})
+
+function renderStatusPage(input: {
+  ok: boolean
+  startedAt: Date
+  checks: { name: string; ok: boolean; detail: string }[]
+}) {
+  const { ok, startedAt, checks } = input
+
+  return `<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
@@ -99,11 +96,42 @@ app.get('/', async (c) => {
   </script>
 </body>
 </html>`
+}
+
+async function statusHandler(c: Context) {
+  const startedAt = new Date()
+  const checks: { name: string; ok: boolean; detail: string }[] = []
+  let dbOk = false
+
+  try {
+    await db.command({ ping: 1 })
+    dbOk = true
+    checks.push({ name: 'MongoDB', ok: true, detail: 'Conexion activa' })
+  } catch (error) {
+    checks.push({ name: 'MongoDB', ok: false, detail: error instanceof Error ? error.message : 'Error desconocido' })
+  }
+
+  const collections = ['users', 'clients', 'consultants', 'products', 'orders', 'trainings']
+  if (dbOk) {
+    for (const collection of collections) {
+      try {
+        const count = await db.collection(collection).countDocuments()
+        checks.push({ name: collection, ok: true, detail: `${count} documentos` })
+      } catch {
+        checks.push({ name: collection, ok: false, detail: 'No se pudo leer' })
+      }
+    }
+  }
+
+  const ok = checks.every((check) => check.ok)
+  const html = renderStatusPage({ ok, startedAt, checks })
 
   return c.html(html, ok ? 200 : 503)
-})
+}
 
-app.use('/api/*', cors())
+app.get('/', statusHandler)
+app.get('/api', statusHandler)
+
 app.use('/api/*', jwtMiddleware)
 
 app.route('/api', auth)
