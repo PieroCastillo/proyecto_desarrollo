@@ -13,7 +13,11 @@ import { db, connectDB } from './db'
 import { jwtMiddleware } from './middleware/auth'
 
 const app = new Hono()
-await connectDB()
+async function main() {
+  await connectDB();
+}
+
+main();
 
 app.get('/', async (c) => {
   const startedAt = new Date()
