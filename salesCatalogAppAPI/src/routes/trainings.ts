@@ -8,9 +8,17 @@ const trainings = new Hono();
 const trainingsCollection = db.collection<Training>("trainings");
 const participationCollection = db.collection<TrainingParticipation>("training_participations");
 
+type JwtPayload = {
+  sub?: string;
+};
+
+type TrainingParticipantView = {
+  username: string;
+};
+
 trainings.get("/trainings", async (c) => {
   try {
-    const payload = c.get("jwtPayload");
+    const payload = c.get("jwtPayload") as JwtPayload | undefined;
     const consultantId = payload?.sub;
 
     const items = await trainingsCollection.find().sort({ createdAt: -1 }).toArray();
@@ -66,7 +74,7 @@ trainings.post("/trainings", async (c) => {
 trainings.post("/trainings/:id/participate", async (c) => {
   try {
     const trainingId = c.req.param("id");
-    const payload = c.get("jwtPayload");
+    const payload = c.get("jwtPayload") as JwtPayload | undefined;
     
     let consultantId = payload?.sub;
     try {
@@ -124,7 +132,7 @@ trainings.get("/trainings/:id/participants", async (c) => {
       consultantsCollection.find({ _id: { $in: participantIds } }).toArray()
     ]);
 
-    const participantsList = [];
+    const participantsList: TrainingParticipantView[] = [];
     
     for (const p of participations) {
       const pid = p.consultantId.toString();

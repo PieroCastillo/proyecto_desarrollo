@@ -213,8 +213,8 @@ const totalPoints = computed(() => trainings.value.filter(t => t.completed).redu
               </button>
               <div v-else class="participants-list">
                 <h4>Consultoras que asistieron:</h4>
-                <ul v-if="courseParticipants[course._id].length > 0">
-                  <li v-for="p in courseParticipants[course._id]" :key="p.username">
+                <ul v-if="(courseParticipants[course._id] ?? []).length > 0">
+                  <li v-for="p in (courseParticipants[course._id] ?? [])" :key="p.username">
                     👤 {{ p.username }}
                   </li>
                 </ul>

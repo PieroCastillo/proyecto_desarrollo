@@ -240,7 +240,7 @@ function evaluarRecomendacion() {
 
   // FALLBACK ABSOLUTO: Si la base de datos está vacía o no coincide nada, devuelve el primer producto del catálogo
   if (!match && productsList.length > 0) {
-    match = productsList[0]
+    match = productsList[0] ?? null
   }
 
   recommendedProduct.value = match

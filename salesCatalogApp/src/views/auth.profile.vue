@@ -39,7 +39,7 @@ const roleLabel: Record<string, string> = {
       <div v-if="loading" class="skeleton-card" />
 
       <div v-else-if="profile" class="profile-card">
-        <div class="avatar">{{ profile.username[0].toUpperCase() }}</div>
+        <div class="avatar">{{ profile.username[0]?.toUpperCase() ?? "?" }}</div>
         <h2 class="username">{{ profile.username }}</h2>
         <span class="role-badge">{{ roleLabel[profile.role] ?? profile.role }}</span>
 
