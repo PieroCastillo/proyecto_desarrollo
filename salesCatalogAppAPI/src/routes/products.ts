@@ -10,6 +10,20 @@ import type {
 const products = new Hono();
 
 const productsCollection = db.collection<Product>("products");
+const MAX_PRODUCT_VALUE = 1000000;
+
+function isValidMoney(value: number) {
+  return Number.isFinite(value) && value >= 0 && value <= MAX_PRODUCT_VALUE;
+}
+
+function isValidStock(value: number) {
+  return Number.isInteger(value) && value >= 0 && value <= MAX_PRODUCT_VALUE;
+}
+
+function isValidImage(value?: string) {
+  if (!value) return true;
+  return value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/images/");
+}
 
 products.get("/products", async (c) => {
   try {
@@ -66,10 +80,9 @@ products.post("/products", async (c) => {
       !category ||
       Number.isNaN(price) ||
       Number.isNaN(stock) ||
-      price < 0 ||
-      stock < 0 ||
-      price > 1000000 ||
-      stock > 1000000
+      !isValidMoney(price) ||
+      !isValidStock(stock) ||
+      !isValidImage(imagen)
     ) {
       throw new Error();
     }
@@ -121,15 +134,19 @@ products.patch("/products/:id/stock", async (c) => {
 
     const { delta } = await c.req.json<PatchStockBody>();
 
-    if (typeof delta !== "number" || Number.isNaN(delta)) {
+    if (
+      typeof delta !== "number" ||
+      !Number.isInteger(delta) ||
+      delta === 0 ||
+      Math.abs(delta) > MAX_PRODUCT_VALUE
+    ) {
       throw new Error();
     }
 
-    const filter: any = { _id: new ObjectId(id) };
-    if (delta < 0) {
-      // Ensure current stock is at least the absolute value of the decrement
-      filter.stock = { $gte: -delta };
-    }
+    const stockGuard = delta < 0
+      ? { $gte: -delta }
+      : { $lte: MAX_PRODUCT_VALUE - delta };
+    const filter: any = { _id: new ObjectId(id), stock: stockGuard };
 
     const result = await productsCollection.findOneAndUpdate(
       filter,

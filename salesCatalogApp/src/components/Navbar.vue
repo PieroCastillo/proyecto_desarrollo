@@ -217,7 +217,6 @@ function handleRegister(credentials: any) {
   bottom: 4px;
   border-radius: 980px;
   background: rgba(0, 0, 0, 0.06);
-  transition: all 0.38s cubic-bezier(0.25, 1, 0.5, 1);
   z-index: 0;
   pointer-events: none;
 }
@@ -232,7 +231,6 @@ function handleRegister(credentials: any) {
   font-size: 0.85rem;
   color: var(--secondary);
   cursor: pointer;
-  transition: color 0.25s ease;
   font-weight: 500;
 }
 

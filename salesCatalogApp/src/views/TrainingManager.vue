@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue"
+import { ref, onMounted, computed, inject } from "vue"
 
 const props = defineProps<{ role: string }>()
+const showNotification = inject<(msg: string, type?: string) => void>("showNotification")
 
 interface Training {
   _id: string
@@ -75,7 +76,7 @@ onMounted(async () => {
 // Marca el curso como completado (Participar)
 async function markCompleted(id: string, targetConsultantId?: string) {
   if (props.role === 'hr' && !targetConsultantId) {
-    alert("Selecciona una consultora primero.")
+    showNotification?.("Selecciona una consultora primero.", "warning")
     return
   }
 
@@ -97,17 +98,17 @@ async function markCompleted(id: string, targetConsultantId?: string) {
       if (props.role !== 'hr') {
         const course = trainings.value.find(t => t._id === id)
         if (course) course.completed = true
-        alert("¡Asistencia registrada! Has sumado puntos a tu perfil.")
+        showNotification?.("Asistencia registrada. Has sumado puntos a tu perfil.", "success")
       } else {
-        alert("¡Asistencia de consultora registrada con éxito!")
+        showNotification?.("Asistencia de consultora registrada con exito.", "success")
         loadParticipants(id)
       }
     } else {
       const data = await res.json()
-      alert(data.message || "Esa consultora ya estaba registrada o ocurrió un error.")
+      showNotification?.(data.message || "Esa consultora ya estaba registrada o ocurrio un error.", "warning")
     }
   } catch (error) {
-    alert("Error de conexión al registrar la asistencia.")
+    showNotification?.("Error de conexion al registrar la asistencia.", "error")
   } finally {
     processingId.value = null
   }

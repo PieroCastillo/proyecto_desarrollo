@@ -6,6 +6,7 @@ const orders = new Hono();
 
 const ordersCollection = db.collection("orders");
 const productsCollection = db.collection("products");
+const MAX_ORDER_QUANTITY = 1000;
 
 type CreateOrderBody = {
   clientId: string;
@@ -65,42 +66,56 @@ orders.post("/orders", async (c) => {
       throw new Error();
     }
 
-    let total = 0;
-    const itemsToSave = [];
+    const requestedByProduct = new Map<string, number>();
 
     for (const item of body.items) {
       if (
         !item.productId ||
         !ObjectId.isValid(item.productId) ||
         typeof item.quantity !== "number" ||
-        item.quantity <= 0
+        !Number.isInteger(item.quantity) ||
+        item.quantity <= 0 ||
+        item.quantity > MAX_ORDER_QUANTITY
       ) {
         throw new Error();
       }
 
+      requestedByProduct.set(
+        item.productId,
+        (requestedByProduct.get(item.productId) ?? 0) + item.quantity
+      );
+    }
+
+    let total = 0;
+    const itemsToSave = [];
+
+    for (const [productId, quantity] of requestedByProduct) {
+      if (quantity > MAX_ORDER_QUANTITY) throw new Error();
+
       const product = await productsCollection.findOne({
-        _id: new ObjectId(item.productId),
+        _id: new ObjectId(productId),
       });
       if (!product) throw new Error();
 
-      if (product.stock < item.quantity) {
+      if (!Number.isFinite(product.price) || product.stock < quantity) {
         throw new Error();
       }
 
-      total += product.price * item.quantity;
+      total += product.price * quantity;
       itemsToSave.push({
-        productId: new ObjectId(item.productId),
+        productId: new ObjectId(productId),
         name: product.name,
         price: product.price,
-        quantity: item.quantity,
+        quantity,
       });
     }
 
-    for (const item of body.items) {
-      await productsCollection.updateOne(
-        { _id: new ObjectId(item.productId) },
-        { $inc: { stock: -item.quantity } }
+    for (const [productId, quantity] of requestedByProduct) {
+      const update = await productsCollection.updateOne(
+        { _id: new ObjectId(productId), stock: { $gte: quantity } },
+        { $inc: { stock: -quantity } }
       );
+      if (update.modifiedCount !== 1) throw new Error();
     }
 
     const orderDoc = {

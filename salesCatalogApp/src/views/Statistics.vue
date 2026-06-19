@@ -1,24 +1,65 @@
 <script setup lang="ts">
-import { ref, onMounted, inject } from "vue"
+import { ref, onMounted, inject, computed } from "vue"
 
 interface TopConsultant {
   id: string
   name: string
   totalSales: number
+  orders: number
+}
+
+interface StatusBreakdown {
+  status: string
+  count: number
+  total: number
+}
+
+interface CategoryBreakdown {
+  category: string
+  count: number
+  stock: number
+}
+
+interface RecentOrder {
+  id: string
+  total: number
+  status: string
+  createdAt: string
+  items: number
 }
 
 interface DashboardData {
+  generatedAt: string
   monthlySales: number
+  monthlyOrders: number
+  totalSales: number
+  totalOrders: number
+  averageOrderValue: number
   pendingOrders: number
   lowStockProducts: number
+  outOfStockProducts: number
+  totalProducts: number
+  totalStock: number
+  averagePrice: number
+  clientsCount: number
+  consultantsCount: number
+  salesByStatus: StatusBreakdown[]
+  productsByCategory: CategoryBreakdown[]
   topConsultants: TopConsultant[]
+  recentOrders: RecentOrder[]
 }
 
-const showNotification = inject<(msg: string, type?: string) => void>('showNotification')
+const showNotification = inject<(msg: string, type?: string) => void>("showNotification")
 const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 
 const stats = ref<DashboardData | null>(null)
 const loading = ref(true)
+
+const maxCategoryStock = computed(() => Math.max(...(stats.value?.productsByCategory.map(c => c.stock) ?? [1]), 1))
+
+function money(value: number) {
+  return `S/ ${Number(value || 0).toFixed(2)}`
+}
 
 async function fetchStats() {
   loading.value = true
@@ -27,16 +68,15 @@ async function fetchStats() {
     const res = await fetch(`${API_URL}/dashboard`, {
       headers: { Authorization: `Bearer ${token}` }
     })
-    
+
     if (res.ok) {
-      const data = await res.json()
-      stats.value = data
+      stats.value = await res.json()
     } else {
-      showNotification?.("No se pudieron cargar las estadísticas del servidor.", "error")
+      showNotification?.("No se pudieron cargar las estadisticas del servidor.", "error")
     }
   } catch (err) {
     console.error(err)
-    showNotification?.("Error de conexión al cargar las estadísticas.", "error")
+    showNotification?.("Error de conexion al cargar las estadisticas.", "error")
   } finally {
     loading.value = false
   }
@@ -50,87 +90,115 @@ onMounted(fetchStats)
     <div class="container">
       <div class="page-header">
         <div>
-          <h1 class="page-title">Estadísticas del Negocio</h1>
-          <p class="page-sub">Panel de rendimiento general e indicadores clave</p>
+          <h1 class="page-title">Dashboard de estadisticas</h1>
+          <p class="page-sub">Ventas, inventario y actividad operativa</p>
         </div>
-        <button class="btn-refresh" @click="fetchStats" :disabled="loading">
-          {{ loading ? 'Actualizando...' : '🔄 Actualizar' }}
+        <button class="btn-refresh" :disabled="loading" @click="fetchStats">
+          {{ loading ? "Actualizando..." : "Actualizar" }}
         </button>
       </div>
 
       <div v-if="loading" class="stats-loading">
-        <div class="shimmer-card" v-for="i in 3" :key="i"></div>
+        <div v-for="i in 6" :key="i" class="shimmer-card"></div>
       </div>
 
       <div v-else-if="stats" class="stats-content">
-        <!-- Tarjetas de Métricas -->
         <div class="metrics-grid">
-          <div class="metric-card sales">
-            <div class="metric-info">
-              <span class="metric-label">Ventas Totales</span>
-              <span class="metric-value">S/ {{ stats.monthlySales.toFixed(2) }}</span>
-            </div>
-            <div class="metric-icon-bg">💰</div>
+          <div class="metric-card">
+            <span class="metric-label">Ventas del mes</span>
+            <strong class="metric-value">{{ money(stats.monthlySales) }}</strong>
+            <span class="metric-note">{{ stats.monthlyOrders }} pedidos este mes</span>
           </div>
-
-          <div class="metric-card pending">
-            <div class="metric-info">
-              <span class="metric-label">Pedidos Pendientes</span>
-              <span class="metric-value">{{ stats.pendingOrders }}</span>
-            </div>
-            <div class="metric-icon-bg">📦</div>
+          <div class="metric-card">
+            <span class="metric-label">Ventas totales</span>
+            <strong class="metric-value">{{ money(stats.totalSales) }}</strong>
+            <span class="metric-note">{{ stats.totalOrders }} pedidos registrados</span>
           </div>
-
-          <div class="metric-card stock">
-            <div class="metric-info">
-              <span class="metric-label">Productos Bajo Stock (<= 5)</span>
-              <span class="metric-value" :class="{ 'warning-text': stats.lowStockProducts > 0 }">
-                {{ stats.lowStockProducts }}
-              </span>
-            </div>
-            <div class="metric-icon-bg">⚠️</div>
+          <div class="metric-card">
+            <span class="metric-label">Ticket promedio</span>
+            <strong class="metric-value">{{ money(stats.averageOrderValue) }}</strong>
+            <span class="metric-note">{{ stats.pendingOrders }} pedidos pendientes</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Inventario</span>
+            <strong class="metric-value">{{ stats.totalStock }}</strong>
+            <span class="metric-note">{{ stats.totalProducts }} productos, {{ stats.lowStockProducts }} bajos, {{ stats.outOfStockProducts }} agotados</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Clientes</span>
+            <strong class="metric-value">{{ stats.clientsCount }}</strong>
+            <span class="metric-note">Base comercial activa</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Consultores</span>
+            <strong class="metric-value">{{ stats.consultantsCount }}</strong>
+            <span class="metric-note">Equipo disponible</span>
           </div>
         </div>
 
-        <!-- Sección de Consultoras Líderes -->
-        <div class="leaderboard-section">
-          <div class="leaderboard-card">
-            <h3 class="card-title">Consultoras Estrella</h3>
-            <p class="card-subtitle">Top 5 consultoras con mayor volumen de ventas registradas</p>
-
-            <div v-if="stats.topConsultants.length === 0" class="empty-leaderboard">
-              Aún no hay ventas registradas por consultores.
-            </div>
-
-            <div v-else class="leaderboard-list">
-              <div 
-                v-for="(c, idx) in stats.topConsultants" 
-                :key="c.id" 
-                class="leaderboard-row"
-              >
-                <div class="rank-badge" :class="'rank-' + (idx + 1)">
-                  {{ idx + 1 }}
-                </div>
-                <div class="consultant-detail">
-                  <div class="consultant-header">
-                    <span class="consultant-name">{{ c.name }}</span>
-                    <span class="consultant-sales">S/ {{ c.totalSales.toFixed(2) }}</span>
-                  </div>
-                  <div class="progress-track">
-                    <div 
-                      class="progress-bar" 
-                      :style="{ width: (c.totalSales / (stats.topConsultants[0].totalSales || 1) * 100) + '%' }"
-                    ></div>
-                  </div>
-                </div>
+        <div class="dashboard-grid">
+          <section class="panel">
+            <h3>Ventas por estado</h3>
+            <div v-if="stats.salesByStatus.length === 0" class="empty-state">Sin pedidos registrados.</div>
+            <div v-else class="status-list">
+              <div v-for="item in stats.salesByStatus" :key="item.status" class="status-row">
+                <span class="status-name">{{ item.status }}</span>
+                <span>{{ item.count }} pedidos</span>
+                <strong>{{ money(item.total) }}</strong>
               </div>
             </div>
-          </div>
+          </section>
+
+          <section class="panel">
+            <h3>Stock por categoria</h3>
+            <div v-if="stats.productsByCategory.length === 0" class="empty-state">Sin productos registrados.</div>
+            <div v-else class="category-list">
+              <div v-for="item in stats.productsByCategory" :key="item.category" class="category-row">
+                <div class="category-head">
+                  <span>{{ item.category }}</span>
+                  <strong>{{ item.stock }} und.</strong>
+                </div>
+                <div class="bar-track">
+                  <div class="bar-fill" :style="{ width: `${Math.max(4, (item.stock / maxCategoryStock) * 100)}%` }"></div>
+                </div>
+                <small>{{ item.count }} productos</small>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h3>Consultoras lideres</h3>
+            <div v-if="stats.topConsultants.length === 0" class="empty-state">Aun no hay ventas por consultor.</div>
+            <div v-else class="leaderboard-list">
+              <div v-for="(c, idx) in stats.topConsultants" :key="c.id" class="leaderboard-row">
+                <span class="rank-badge">{{ idx + 1 }}</span>
+                <div>
+                  <strong>{{ c.name }}</strong>
+                  <small>{{ c.orders }} pedidos</small>
+                </div>
+                <span>{{ money(c.totalSales) }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h3>Pedidos recientes</h3>
+            <div v-if="stats.recentOrders.length === 0" class="empty-state">Sin actividad reciente.</div>
+            <div v-else class="orders-list">
+              <div v-for="order in stats.recentOrders" :key="order.id" class="order-row">
+                <div>
+                  <strong>{{ money(order.total) }}</strong>
+                  <small>{{ order.items }} items - {{ new Date(order.createdAt).toLocaleDateString() }}</small>
+                </div>
+                <span class="order-status">{{ order.status }}</span>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
 
       <div v-else class="empty-state">
-        No se pudieron obtener estadísticas. Por favor intenta de nuevo.
+        No se pudieron obtener estadisticas. Por favor intenta de nuevo.
       </div>
     </div>
   </main>
@@ -153,8 +221,6 @@ onMounted(fetchStats)
   font-size: 0.9rem;
   cursor: pointer;
   color: var(--primary);
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
 }
 
 .btn-refresh:hover:not(:disabled) {
@@ -167,18 +233,19 @@ onMounted(fetchStats)
   cursor: not-allowed;
 }
 
-.stats-loading {
+.stats-loading,
+.metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
 }
 
 .shimmer-card {
-  height: 140px;
+  height: 138px;
   background: linear-gradient(90deg, #f5f5f7 25%, #eaeaea 50%, #f5f5f7 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
-  border-radius: 24px;
+  border-radius: 16px;
 }
 
 @keyframes shimmer {
@@ -187,168 +254,155 @@ onMounted(fetchStats)
 }
 
 .metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-  margin-bottom: 40px;
+  margin-bottom: 24px;
+}
+
+.metric-card,
+.panel {
+  background: var(--white);
+  border: 1px solid rgba(0,0,0,0.04);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
 }
 
 .metric-card {
-  background: var(--white);
-  border-radius: 24px;
-  padding: 32px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.02);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.3s;
-}
-
-.metric-card:hover {
-  transform: translateY(-4px);
-}
-
-.metric-info {
+  padding: 22px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 112px;
 }
 
 .metric-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: var(--secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .metric-value {
-  font-size: 2.4rem;
-  font-weight: 800;
   color: var(--primary);
-  letter-spacing: -0.02em;
+  font-size: clamp(1.7rem, 4vw, 2.3rem);
+  line-height: 1.05;
+  letter-spacing: 0;
 }
 
-.warning-text {
-  color: #ff9500;
-}
-
-.metric-icon-bg {
-  font-size: 4rem;
-  opacity: 0.08;
-  position: absolute;
-  right: 16px;
-  bottom: 0px;
-  pointer-events: none;
-  user-select: none;
-}
-
-.leaderboard-section {
-  max-width: 720px;
-  margin: 0 auto;
-}
-
-.leaderboard-card {
-  background: var(--white);
-  border-radius: 24px;
-  padding: 40px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.03);
-  border: 1px solid rgba(0,0,0,0.02);
-}
-
-.card-title {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--primary);
-  margin: 0 0 6px;
-}
-
-.card-subtitle {
-  font-size: 0.95rem;
+.metric-note,
+small {
   color: var(--secondary);
-  margin: 0 0 32px;
+  font-size: 0.86rem;
 }
 
-.empty-leaderboard {
-  text-align: center;
-  color: var(--secondary);
-  padding: 40px 0;
-  font-style: italic;
-}
-
-.leaderboard-list {
-  display: flex;
-  flex-direction: column;
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 24px;
 }
 
-.leaderboard-row {
+.panel {
+  padding: 24px;
+}
+
+.panel h3 {
+  margin: 0 0 18px;
+  font-size: 1.08rem;
+  color: var(--primary);
+}
+
+.status-list,
+.category-list,
+.leaderboard-list,
+.orders-list {
   display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.status-row,
+.leaderboard-row,
+.order-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
   align-items: center;
-  gap: 20px;
+}
+
+.status-name,
+.order-status {
+  text-transform: capitalize;
+  font-weight: 700;
+}
+
+.category-row {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.category-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 700;
+}
+
+.bar-track {
+  height: 9px;
+  background: var(--light);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: #0071e3;
+  border-radius: 999px;
 }
 
 .rank-badge {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--light);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--primary);
-  flex-shrink: 0;
+  font-weight: 800;
 }
 
-.rank-1 { background: #fef08a; color: #854d0e; }
-.rank-2 { background: #f1f5f9; color: #475569; }
-.rank-3 { background: #ffebd2; color: #a5682a; }
+.leaderboard-row {
+  grid-template-columns: 32px 1fr auto;
+}
 
-.consultant-detail {
-  flex-grow: 1;
+.leaderboard-row div,
+.order-row div {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 3px;
 }
 
-.consultant-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.consultant-name {
-  font-weight: 600;
-  color: var(--primary);
-}
-
-.consultant-sales {
-  font-weight: 700;
-  color: var(--accent);
-}
-
-.progress-track {
-  height: 8px;
+.order-status {
   background: var(--light);
-  border-radius: 99px;
-  overflow: hidden;
-}
-
-.progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent), #8b5cf6);
-  border-radius: 99px;
-  transition: width 1s ease;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
 }
 
 .empty-state {
   text-align: center;
   color: var(--secondary);
-  padding: 60px 0;
+  padding: 36px 12px;
+}
+
+@media (max-width: 640px) {
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

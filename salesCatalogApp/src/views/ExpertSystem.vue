@@ -42,6 +42,18 @@ const renewalDays = ref(30) // Tiempo de renovación sugerido en días
 const recommendedProduct = ref<Product | null>(null)
 const savingOrder = ref(false) // Control de carga al registrar el pedido final
 
+function clampInteger(value: number, min: number, max: number) {
+  const normalized = Math.trunc(Number(value))
+  if (!Number.isFinite(normalized)) return min
+  return Math.min(max, Math.max(min, normalized))
+}
+
+function normalizeDemandInputs() {
+  const maxQty = recommendedProduct.value ? Math.min(1000, Math.max(1, recommendedProduct.value.stock)) : 1000
+  quantity.value = clampInteger(quantity.value, 1, maxQty)
+  renewalDays.value = clampInteger(renewalDays.value, 1, 365)
+}
+
 // Carga inicial de datos de clientes y productos desde el servidor MongoDB
 onMounted(async () => {
   try {
@@ -259,6 +271,7 @@ async function registrarPedidoRecomendado() {
     return
   }
 
+  normalizeDemandInputs()
   const qty = Number(quantity.value)
   if (qty <= 0 || !Number.isInteger(qty)) {
     showNotification?.("La cantidad debe ser un número entero mayor a 0.", "error")
@@ -457,18 +470,18 @@ async function registrarPedidoRecomendado() {
             <div class="demand-fields">
               <div class="field">
                 <label>Cantidad pedida</label>
-                <input v-model.number="quantity" type="number" min="1" class="expert-input" />
+                <input v-model.number="quantity" type="number" min="1" :max="Math.min(1000, recommendedProduct.stock)" step="1" class="expert-input" @blur="normalizeDemandInputs" />
               </div>
               <div class="field">
                 <label>Tiempo de renovación (días)</label>
-                <input v-model.number="renewalDays" type="number" min="1" class="expert-input" />
+                <input v-model.number="renewalDays" type="number" min="1" max="365" step="1" class="expert-input" @blur="normalizeDemandInputs" />
                 <span class="input-helper">Sugerido para su categoría de consumo</span>
               </div>
             </div>
 
             <button 
               class="btn-order-expert" 
-              :disabled="savingOrder || recommendedProduct.stock < quantity" 
+              :disabled="savingOrder || !Number.isInteger(Number(quantity)) || quantity < 1 || quantity > recommendedProduct.stock || quantity > 1000" 
               @click="registrarPedidoRecomendado"
             >
               {{ savingOrder ? 'Registrando Pedido…' : 'Registrar Pedido de Venta' }}
