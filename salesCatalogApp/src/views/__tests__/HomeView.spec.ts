@@ -4,16 +4,15 @@ import HomeView from '../HomeView.vue'
 
 // HU4: Ventas Digitales
 // HU5: Catálogo y Control de Ventas
+//garantiza que tu catálogo web es capaz de conectarse a una base de datos, descargar una lista de productos y clientes
 
-// Mockeamos la función global fetch para simular el backend
 global.fetch = vi.fn()
 
 describe('HomeView.vue (HU4 y HU5)', () => {
   beforeEach(() => {
-    // Limpiamos los mocks antes de cada test
+    
     vi.resetAllMocks()
     
-    // Configuramos localStorage falso
     Storage.prototype.getItem = vi.fn(() => 'fake-token')
   })
 
@@ -46,10 +45,10 @@ describe('HomeView.vue (HU4 y HU5)', () => {
       }
     })
 
-    // resolucion de todas las promesas del onMounted
+    //pause
     await flushPromises()
 
-    // Validamos que el título del catálogo exista
+    
     expect(wrapper.text()).toContain('Catálogo de Productos')
     
     // Validamos que los productos se rendericen correctamente
@@ -58,20 +57,18 @@ describe('HomeView.vue (HU4 y HU5)', () => {
     expect(productNames[0].text()).toBe('Crema Hidratante')
     expect(productNames[1].text()).toBe('Perfume Floral')
     
-    // Validamos que el cliente esté en el selector
+   
     const options = wrapper.findAll('option')
     expect(options[1].text()).toBe('Cliente de Prueba')
   })
-
+ //Test2:
   it('Verifica que no se pueda añadir a orden sin seleccionar cliente (HU4)', async () => {
-    // Simulacion del window.alert para capturarlo
+   
     const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {})
 
     ;(global.fetch as any).mockImplementation((url: string) => {
       if (url.includes('/clients')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ items: [] }) })
-      if (url.includes('/products')) return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({
+      if (url.includes('/products')) return Promise.resolve({ok: true,json: () => Promise.resolve({
           items: [{ _id: 'p1', name: 'Producto Test', price: 10, stock: 10, category: 'Test' }]
         })
       })
@@ -80,24 +77,22 @@ describe('HomeView.vue (HU4 y HU5)', () => {
     const wrapper = mount(HomeView, { props: { userName: 'Piero', userId: 'u1' } })
     await flushPromises()
 
-    // Simulamos el click en el botón de comprar
+   
     const buyButton = wrapper.find('.btn-add')
     await buyButton.trigger('click')
 
-    // Validacion que el sistema lance la alerta porque no seleccionamos cliente
+    
     expect(alertMock).toHaveBeenCalledWith('¡Espera! Debes seleccionar a qué Cliente le estás vendiendo antes de añadir un producto.')
   })
-
+//test3
   it('Añade un pedido correctamente al seleccionar cliente (HU4 - Ventas Digitales)', async () => {
     const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {})
 
     ;(global.fetch as any).mockImplementation((url: string, options: any) => {
       if (url.includes('/clients')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ items: [{ _id: 'c1', name: 'Cliente' }] }) })
-      if (url.includes('/products')) return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ items: [{ _id: 'p1', name: 'Crema', price: 10, stock: 10, category: 'Test' }] })
+      if (url.includes('/products')) return Promise.resolve({ok: true,  json: () => Promise.resolve({ items: [{ _id: 'p1', name: 'Crema', price: 10, stock: 10, category: 'Test' }] })
       })
-      // Simulamos la creación del pedido (POST /orders)
+      
       if (url.includes('/orders') && options?.method === 'POST') {
         return Promise.resolve({ ok: true })
       }
@@ -106,16 +101,16 @@ describe('HomeView.vue (HU4 y HU5)', () => {
     const wrapper = mount(HomeView, { props: { userName: 'Piero', userId: 'u1' } })
     await flushPromises()
 
-    //Seleccionamos el cliente en el dropdown
+    
     const select = wrapper.find('.select-client')
     await select.setValue('c1')
 
-    //Le damos click a comprar
+    
     const buyButton = wrapper.find('.btn-add')
     await buyButton.trigger('click')
     await flushPromises()
 
-    //Validamos que el API haya sido llamado con el POST correcto
+    
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/orders'),
       expect.objectContaining({
@@ -128,7 +123,7 @@ describe('HomeView.vue (HU4 y HU5)', () => {
       })
     )
 
-    //Validamos el éxito del pedido
+
     expect(alertMock).toHaveBeenCalledWith('✓ Crema añadido al pedido')
   })
 })

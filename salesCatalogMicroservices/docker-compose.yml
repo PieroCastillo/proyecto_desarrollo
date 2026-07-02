@@ -1,0 +1,45 @@
+services:
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+    env_file:
+      - .env
+
+  catalog-service:
+    build: ./catalog-service
+    container_name: catalog-service
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+    env_file:
+      - .env
+
+  orders-service:
+    build: ./orders-service
+    container_name: orders-service
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+    env_file:
+      - .env
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - AUTH_URL=http://auth-service:3001
+      - CATALOG_URL=http://catalog-service:3002
+      - ORDERS_URL=http://orders-service:3003
+    depends_on:
+      - auth-service
+      - catalog-service
+      - orders-service
