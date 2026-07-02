@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue"
+import { ref, onMounted, computed, inject } from "vue"
 
 const props = defineProps<{ role: string }>()
+const showNotification = inject<(msg: string, type?: string) => void>("showNotification")
 
 interface Training {
   _id: string
@@ -14,7 +15,7 @@ interface Training {
   completed: boolean
 }
 
-const API_URL = "http://localhost:3000/api"
+const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 const trainings = ref<Training[]>([])
 const loading = ref(true)
 const processingId = ref<string | null>(null)
@@ -75,7 +76,7 @@ onMounted(async () => {
 // Marca el curso como completado (Participar)
 async function markCompleted(id: string, targetConsultantId?: string) {
   if (props.role === 'hr' && !targetConsultantId) {
-    alert("Selecciona una consultora primero.")
+    showNotification?.("Selecciona una consultora primero.", "warning")
     return
   }
 
@@ -97,17 +98,17 @@ async function markCompleted(id: string, targetConsultantId?: string) {
       if (props.role !== 'hr') {
         const course = trainings.value.find(t => t._id === id)
         if (course) course.completed = true
-        alert("¡Asistencia registrada! Has sumado puntos a tu perfil.")
+        showNotification?.("Asistencia registrada. Has sumado puntos a tu perfil.", "success")
       } else {
-        alert("¡Asistencia de consultora registrada con éxito!")
+        showNotification?.("Asistencia de consultora registrada con exito.", "success")
         loadParticipants(id)
       }
     } else {
       const data = await res.json()
-      alert(data.message || "Esa consultora ya estaba registrada o ocurrió un error.")
+      showNotification?.(data.message || "Esa consultora ya estaba registrada o ocurrio un error.", "warning")
     }
   } catch (error) {
-    alert("Error de conexión al registrar la asistencia.")
+    showNotification?.("Error de conexion al registrar la asistencia.", "error")
   } finally {
     processingId.value = null
   }
@@ -212,8 +213,8 @@ const totalPoints = computed(() => trainings.value.filter(t => t.completed).redu
               </button>
               <div v-else class="participants-list">
                 <h4>Consultoras que asistieron:</h4>
-                <ul v-if="courseParticipants[course._id].length > 0">
-                  <li v-for="p in courseParticipants[course._id]" :key="p.username">
+                <ul v-if="(courseParticipants[course._id] ?? []).length > 0">
+                  <li v-for="p in (courseParticipants[course._id] ?? [])" :key="p.username">
                     👤 {{ p.username }}
                   </li>
                 </ul>

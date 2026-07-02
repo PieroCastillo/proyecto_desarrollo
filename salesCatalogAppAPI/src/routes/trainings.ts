@@ -8,15 +8,21 @@ const trainings = new Hono();
 const trainingsCollection = db.collection<Training>("trainings");
 const participationCollection = db.collection<TrainingParticipation>("training_participations");
 
-// Obtener todas las capacitaciones y verificar si el usuario logueado ya participó
+type JwtPayload = {
+  sub?: string;
+};
+
+type TrainingParticipantView = {
+  username: string;
+};
+
 trainings.get("/trainings", async (c) => {
   try {
-    const payload = c.get("jwtPayload");
+    const payload = c.get("jwtPayload") as JwtPayload | undefined;
     const consultantId = payload?.sub;
 
     const items = await trainingsCollection.find().sort({ createdAt: -1 }).toArray();
 
-    // Si el usuario es consultora, buscar cuáles ha completado
     let completedIds: string[] = [];
     if (consultantId && ObjectId.isValid(consultantId)) {
       const participations = await participationCollection
@@ -25,7 +31,6 @@ trainings.get("/trainings", async (c) => {
       completedIds = participations.map(p => p.trainingId.toString());
     }
 
-    // Agregar el flag 'completed' a cada item
     const formattedItems = items.map(item => ({
       ...item,
       completed: completedIds.includes(item._id.toString())
@@ -40,7 +45,6 @@ trainings.get("/trainings", async (c) => {
   }
 });
 
-// Crear una nueva capacitación (Solo RRHH / Director)
 trainings.post("/trainings", async (c) => {
   try {
     const body = await c.req.json();
@@ -67,14 +71,11 @@ trainings.post("/trainings", async (c) => {
   }
 });
 
-// Registrar participación / marcar como completado
 trainings.post("/trainings/:id/participate", async (c) => {
   try {
     const trainingId = c.req.param("id");
-    const payload = c.get("jwtPayload");
+    const payload = c.get("jwtPayload") as JwtPayload | undefined;
     
-    // Si envían un consultantId por el body (ej: RRHH registrando a alguien), lo usamos
-    // Si no, usamos el ID del usuario logueado (Consultora)
     let consultantId = payload?.sub;
     try {
       const body = await c.req.json();
@@ -82,14 +83,12 @@ trainings.post("/trainings/:id/participate", async (c) => {
         consultantId = body.consultantId;
       }
     } catch(e) {
-      // Ignorar si no hay body
     }
 
     if (!ObjectId.isValid(trainingId) || !consultantId || !ObjectId.isValid(consultantId)) {
       return c.json({ ok: false, error: { message: "ID inválido" } }, 400);
     }
 
-    // Verificar si ya existe
     const existing = await participationCollection.findOne({
       trainingId: new ObjectId(trainingId),
       consultantId: new ObjectId(consultantId)
@@ -111,7 +110,6 @@ trainings.post("/trainings/:id/participate", async (c) => {
   }
 });
 
-// Obtener lista de participantes de una capacitación (Solo RRHH)
 trainings.get("/trainings/:id/participants", async (c) => {
   try {
     const trainingId = c.req.param("id");
@@ -126,8 +124,6 @@ trainings.get("/trainings/:id/participants", async (c) => {
 
     const participantIds = participations.map(p => p.consultantId);
 
-    // Puede que sean usuarios del sistema (JWT) o consultoras (Dropdown RRHH)
-    // Buscamos en ambas colecciones
     const usersCollection = db.collection("users");
     const consultantsCollection = db.collection("consultants");
 
@@ -136,8 +132,7 @@ trainings.get("/trainings/:id/participants", async (c) => {
       consultantsCollection.find({ _id: { $in: participantIds } }).toArray()
     ]);
 
-    // Combinamos y normalizamos los nombres
-    const participantsList = [];
+    const participantsList: TrainingParticipantView[] = [];
     
     for (const p of participations) {
       const pid = p.consultantId.toString();

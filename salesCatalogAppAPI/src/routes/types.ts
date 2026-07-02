@@ -54,6 +54,7 @@ export type CreateProductBody = {
   category: string;
   price: number;
   stock: number;
+  imagen?: string;
 };
 
 export type PatchStockBody = {
@@ -66,6 +67,7 @@ export type Product = {
   category: string;
   price: number;
   stock: number;
+  imagen?: string;
 };
 
 export type Training = {

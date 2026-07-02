@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue"
 
-const API_URL = "http://localhost:3000/api"
+const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 
 interface UserProfile {
   id: string
@@ -39,7 +39,7 @@ const roleLabel: Record<string, string> = {
       <div v-if="loading" class="skeleton-card" />
 
       <div v-else-if="profile" class="profile-card">
-        <div class="avatar">{{ profile.username[0].toUpperCase() }}</div>
+        <div class="avatar">{{ profile.username[0]?.toUpperCase() ?? "?" }}</div>
         <h2 class="username">{{ profile.username }}</h2>
         <span class="role-badge">{{ roleLabel[profile.role] ?? profile.role }}</span>
 

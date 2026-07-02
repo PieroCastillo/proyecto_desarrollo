@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
+import { ref, onMounted, inject } from "vue"
 
 interface Product {
   _id: string
@@ -17,7 +17,8 @@ const props = defineProps<{
 
 const emit = defineEmits(["logout"])
 
-const API_URL = "http://localhost:3000/api"
+const showNotification = inject<(msg: string, type?: string) => void>('showNotification')
+const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 const products = ref<Product[]>([])
 const loading = ref(true)
 const saldo = ref(1250.40)
@@ -52,7 +53,7 @@ onMounted(async () => {
 
 async function addToCart(id: string, name: string) {
   if (!selectedClient.value) {
-    alert("¡Espera! Debes seleccionar a qué Cliente le estás vendiendo antes de añadir un producto.")
+    showNotification?.("Espera. Debes seleccionar a que cliente le estas vendiendo antes de anadir un producto.", "warning")
     return
   }
 
@@ -71,12 +72,15 @@ async function addToCart(id: string, name: string) {
       }),
     })
     if (res.ok) {
-      alert(`✓ ${name} añadido al pedido`)
+      products.value = products.value
+        .map(p => p._id === id ? { ...p, stock: Math.max(0, p.stock - 1) } : p)
+        .filter(p => p.stock > 0)
+      showNotification?.(`${name} anadido al pedido`, "success")
     } else {
-      alert("Error de validación al crear el pedido")
+      showNotification?.("Error de validacion al crear el pedido", "error")
     }
   } catch {
-    alert("Error al procesar el pedido")
+    showNotification?.("Error al procesar el pedido", "error")
   }
 }
 </script>
@@ -91,14 +95,14 @@ async function addToCart(id: string, name: string) {
         </div>
         <div class="balance-right">
           <p class="welcome">Bienvenida, <strong>{{ userName }}</strong></p>
-          <button class="btn-logout" @click="emit('logout')">Cerrar sesión</button>
+          <button class="btn-logout" @click="emit('logout')">Cerrar sesion</button>
         </div>
       </div>
 
       <div class="catalog-header">
-        <h2 class="section-title">Catálogo de Productos</h2>
+        <h2 class="section-title">Catalogo de Productos</h2>
         <div class="client-selector">
-          <label>¿A quién le vendemos hoy?</label>
+          <label>A quien le vendemos hoy?</label>
           <select v-model="selectedClient" class="nav-input select-client">
             <option value="">-- Selecciona un Cliente --</option>
             <option v-for="c in clients" :key="c._id" :value="c._id">
@@ -128,7 +132,7 @@ async function addToCart(id: string, name: string) {
           <span class="category-tag">{{ p.category }}</span>
           <h4 class="prod-name">{{ p.name }}</h4>
           <p class="prod-price">S/ {{ p.price.toFixed(2) }}</p>
-          <button class="btn-add" @click="addToCart(p._id, p.name)">Comprar / Añadir a orden</button>
+          <button class="btn-add" @click="addToCart(p._id, p.name)">Comprar / Anadir a orden</button>
         </div>
       </div>
     </div>
@@ -372,3 +376,4 @@ async function addToCart(id: string, name: string) {
   }
 }
 </style>
+

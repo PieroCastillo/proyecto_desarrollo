@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue"
 
-const API_URL = "http://localhost:3000/api"
+const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 
 interface Client {
   _id: string
@@ -99,7 +99,7 @@ async function createClient() {
 
       <div v-else class="client-list">
         <div v-for="c in clients" :key="c._id" class="client-row">
-          <div class="client-avatar">{{ c.name[0].toUpperCase() }}</div>
+          <div class="client-avatar">{{ c.name[0]?.toUpperCase() ?? "?" }}</div>
           <div class="client-info">
             <span class="client-name">{{ c.name }}</span>
             <span class="client-meta">{{ c.phone }} · {{ c.address }}</span>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, provide } from "vue"
 import Navbar from "./components/Navbar.vue"
 import PublicView from "./views/PublicView.vue"
 import HomeView from "./views/HomeView.vue"
@@ -11,15 +11,35 @@ import TrainingManagerView from "./views/TrainingManager.vue"
 import ReturnsManagerView from "./views/ReturnsManager.vue"
 import RoutePlannerView from "./views/RoutePlanner.vue"
 import MyOrdersView from "./views/MyOrders.vue"
+import StatisticsView from "./views/Statistics.vue"
 
 const isLogged = ref(false) // Estado booleano de sesión iniciada
 const displayUserName = ref("Consultora") // Nombre de usuario para mostrar
 const userId = ref("") // ID del usuario logueado en MongoDB
-const API_URL = "http://localhost:3000/api" // Ruta base de la API del servidor
+const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api" // Ruta base de la API del servidor
 
 const currentView = ref("home") // Rastreador de la pestaña de navegación activa
-
 const currentRole = ref("consultant")
+
+// Sistema de Notificaciones Toast
+interface Notification {
+  id: number
+  message: string
+  type: 'success' | 'error' | 'info' | 'warning'
+}
+
+const notifications = ref<Notification[]>([])
+let nextNotificationId = 0
+
+function showNotification(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') {
+  const id = nextNotificationId++
+  notifications.value.push({ id, message, type })
+  setTimeout(() => {
+    notifications.value = notifications.value.filter(n => n.id !== id)
+  }, 4000)
+}
+
+provide('showNotification', showNotification)
 
 // Función para cambiar de rol al instante desde el simulador flotante
 function selectRole(role: string, defaultView: string) {
@@ -43,12 +63,14 @@ async function handleLogin(credentials: any) {
       currentRole.value = "consultant" 
       displayUserName.value = data.data.user.username
       userId.value = data.data.user.id
-      localStorage.setItem('token', data.data.accessToken) 
+      localStorage.setItem('token', data.data.accessToken)
+      showNotification(`¡Bienvenida de nuevo, ${data.data.user.username}!`, "success")
     } else {
-      alert("Usuario o contraseña incorrectos en el sistema")
+      showNotification("Usuario o contraseña incorrectos en el sistema", "error")
     }
   } catch (error) {
     console.error("Error: ¿Está prendido el backend en el puerto 3000?", error)
+    showNotification("Error de conexión con el servidor", "error")
   }
 }
 
@@ -69,16 +91,17 @@ async function handleRegister(credentials: any) {
       displayUserName.value = data.data.user.username
       userId.value = data.data.user.id
       localStorage.setItem('token', data.data.accessToken)
-      alert("¡Cuenta creada y sesión iniciada con éxito!")
+      showNotification("¡Cuenta creada y sesión iniciada con éxito!", "success")
     } else {
       if (data.error?.code === "USERNAME_TAKEN") {
-        alert("El usuario ya existe en el sistema. Elige otro nombre.")
+        showNotification("El usuario ya existe en el sistema. Elige otro nombre.", "warning")
       } else {
-        alert(data.error?.message || "Error al registrar el usuario (mínimo 4 caracteres).")
+        showNotification(data.error?.message || "Error al registrar el usuario (mínimo 4 caracteres).", "error")
       }
     }
   } catch (error) {
     console.error("Error al registrarse:", error)
+    showNotification("Error de conexión al registrarse", "error")
   }
 }
 
@@ -90,6 +113,7 @@ function handleLogout() {
   displayUserName.value = "Consultora"
   userId.value = ""
   localStorage.removeItem('token')
+  showNotification("Sesión cerrada correctamente", "info")
 }
 </script>
 
@@ -122,6 +146,7 @@ function handleLogout() {
     <TrainingManagerView v-else-if="currentView === 'trainings'" :role="currentRole" />
     <ReturnsManagerView v-else-if="currentView === 'returns'" />
     <RoutePlannerView v-else-if="currentView === 'delivery_routes'" />
+    <StatisticsView v-else-if="currentView === 'statistics'" />
   </div>
 
   
@@ -150,6 +175,26 @@ function handleLogout() {
         Despacho / Almacén
       </button>
     </div>
+  </div>
+
+  <!-- Contenedor de Notificaciones Toast -->
+  <div class="toast-container">
+    <TransitionGroup name="toast">
+      <div 
+        v-for="n in notifications" 
+        :key="n.id" 
+        :class="['toast', n.type]"
+        @click="notifications = notifications.filter(item => item.id !== n.id)"
+      >
+        <div class="toast-icon">
+          <template v-if="n.type === 'success'">🟢</template>
+          <template v-else-if="n.type === 'error'">🔴</template>
+          <template v-else-if="n.type === 'warning'">🟡</template>
+          <template v-else>🔵</template>
+        </div>
+        <div class="toast-message">{{ n.message }}</div>
+      </div>
+    </TransitionGroup>
   </div>
 </template>
 

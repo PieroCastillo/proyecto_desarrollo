@@ -1,16 +1,27 @@
 import { Hono } from "hono";
 import { sign, verify } from "hono/jwt";
 import { ObjectId } from "mongodb";
-import { hash, verify as verifyArgon } from "argon2";
 import type { LoginBody, RegisterBody, User } from "./types";
 import { db } from "../db";
 
 const auth = new Hono();
 
-const JWT_SECRET = process.env.JWT_SECRET;
+function getJwtSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET is missing");
+  }
+  return secret;
+}
 
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET is missing");
+async function hashPassword(password: string) {
+  const { hash } = await import("argon2");
+  return hash(password);
+}
+
+async function verifyPassword(hashValue: string, password: string) {
+  const { verify: verifyArgon } = await import("argon2");
+  return verifyArgon(hashValue, password);
 }
 
 const users = db.collection<User>("users");
@@ -50,7 +61,7 @@ auth.post("/auth/login", async (c) => {
       );
     }
 
-    const valid = await verifyArgon(user.passwordHash, password);
+    const valid = await verifyPassword(user.passwordHash, password);
 
     if (!valid) {
       return c.json(
@@ -72,7 +83,7 @@ auth.post("/auth/login", async (c) => {
         role: user.role,
         exp: Math.floor(Date.now() / 1000) + 900,
       },
-      JWT_SECRET,
+      getJwtSecret(),
     );
 
     return c.json({
@@ -88,7 +99,10 @@ auth.post("/auth/login", async (c) => {
         },
       },
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "JWT_SECRET is missing") {
+      return c.json({ ok: false, error: { code: "SERVER_CONFIG", message: error.message } }, 500);
+    }
     return c.json(
       {
         ok: false,
@@ -138,7 +152,7 @@ auth.post("/auth/register", async (c) => {
       );
     }
 
-    const passwordHash = await hash(password);
+    const passwordHash = await hashPassword(password);
 
     const newUser = {
       username,
@@ -155,7 +169,7 @@ auth.post("/auth/register", async (c) => {
         role: role,
         exp: Math.floor(Date.now() / 1000) + 900,
       },
-      JWT_SECRET,
+      getJwtSecret(),
     );
 
     return c.json({
@@ -171,7 +185,10 @@ auth.post("/auth/register", async (c) => {
         },
       },
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "JWT_SECRET is missing") {
+      return c.json({ ok: false, error: { code: "SERVER_CONFIG", message: error.message } }, 500);
+    }
     return c.json(
       {
         ok: false,
@@ -205,7 +222,7 @@ auth.get("/auth/me", async (c) => {
     const token = authorization.slice(7);
 
     // Hono v4 requiere especificar obligatoriamente el algoritmo por seguridad
-    const payload = await verify(token, JWT_SECRET, "HS256");
+    const payload = await verify(token, getJwtSecret(), "HS256");
 
     if (!payload.sub || !ObjectId.isValid(payload.sub as string)) {
       throw new Error();

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue"
+import { ref, onMounted, watch, inject } from "vue"
 
-const API_URL = "http://localhost:3000/api"
+const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
+const showNotification = inject<(msg: string, type?: string) => void>("showNotification")
 
 interface Consultant {
   _id: string
@@ -18,6 +19,7 @@ const page = ref(1)
 const search = ref("")
 const showForm = ref(false)
 const editTarget = ref<Consultant | null>(null)
+const pendingDeleteId = ref<string | null>(null)
 
 const form = ref({ name: "", dni: "", phone: "", zone: "" })
 const saving = ref(false)
@@ -126,13 +128,28 @@ async function saveConsultant() {
 }
 
 async function deleteConsultant(id: string) {
-  if (!confirm("¿Eliminar este consultor?")) return
-  const token = localStorage.getItem("token")
-  await fetch(`${API_URL}/consultants/${id}`, { 
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  await fetchConsultants()
+  if (pendingDeleteId.value !== id) {
+    pendingDeleteId.value = id
+    showNotification?.("Pulsa Confirmar en la fila para eliminar el consultor.", "warning")
+    return
+  }
+  try {
+    const token = localStorage.getItem("token")
+    const res = await fetch(`${API_URL}/consultants/${id}`, { 
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (res.ok) {
+      showNotification?.("Consultor eliminado correctamente.", "success")
+      await fetchConsultants()
+    } else {
+      showNotification?.("No se pudo eliminar el consultor.", "error")
+    }
+  } catch {
+    showNotification?.("Error de conexion al eliminar el consultor.", "error")
+  } finally {
+    pendingDeleteId.value = null
+  }
 }
 
 const totalPages = () => Math.ceil(total.value / 10)
@@ -214,7 +231,13 @@ const totalPages = () => Math.ceil(total.value / 10)
               <td><span class="zone-tag">{{ c.zone }}</span></td>
               <td class="td-actions">
                 <button class="action-btn" @click="openEdit(c)">Editar</button>
-                <button class="action-btn danger" @click="deleteConsultant(c._id)">Eliminar</button>
+                <button
+                  :class="['action-btn', { danger: pendingDeleteId !== c._id, confirm: pendingDeleteId === c._id }]"
+                  @click="deleteConsultant(c._id)"
+                >
+                  {{ pendingDeleteId === c._id ? "Confirmar" : "Eliminar" }}
+                </button>
+                <button v-if="pendingDeleteId === c._id" class="action-btn" @click="pendingDeleteId = null">Cancelar</button>
               </td>
             </tr>
           </tbody>
@@ -333,7 +356,6 @@ const totalPages = () => Math.ceil(total.value / 10)
   border-radius: 3px 3px 0 0;
 }
 
-<style scoped>
 .toolbar {
   margin-bottom: 32px;
 }
@@ -457,6 +479,11 @@ const totalPages = () => Math.ceil(total.value / 10)
 }
 
 .action-btn.danger:hover {
+  background: #ff3b30;
+  color: white;
+}
+
+.action-btn.confirm {
   background: #ff3b30;
   color: white;
 }
