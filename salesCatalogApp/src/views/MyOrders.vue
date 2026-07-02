@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue"
+import { API_URL } from "@/config/api"
 
 interface OrderItem {
   productId: string
@@ -22,7 +23,6 @@ const props = defineProps<{
   userId: string
 }>()
 
-const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 const orders = ref<Order[]>([])
 const clientsMap = ref<Record<string, string>>({})
 const loading = ref(true)

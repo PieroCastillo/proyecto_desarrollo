@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed, inject } from "vue"
+import { API_URL } from "@/config/api"
 
 const showNotification = inject<(msg: string, type?: string) => void>('showNotification')
 
@@ -19,8 +20,6 @@ interface Product {
   stock: number
   imagen?: string // <--- Propiedad opcional para la ruta de la imagen
 }
-
-const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api" // Endpoint base de la API del servidor
 
 // Estados reactivos para la carga de datos desde el backend
 const clients = ref<Client[]>([]) // Listado de clientes reales cargados de la base de datos

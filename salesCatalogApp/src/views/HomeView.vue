@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, inject } from "vue"
+import { API_URL } from "@/config/api"
 
 interface Product {
   _id: string
@@ -18,7 +19,6 @@ const props = defineProps<{
 const emit = defineEmits(["logout"])
 
 const showNotification = inject<(msg: string, type?: string) => void>('showNotification')
-const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 const products = ref<Product[]>([])
 const loading = ref(true)
 const saldo = ref(1250.40)

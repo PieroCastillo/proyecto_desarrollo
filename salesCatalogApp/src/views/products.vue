@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, inject } from "vue"
+import { API_URL } from "@/config/api"
 
 const showNotification = inject<(msg: string, type?: string) => void>("showNotification")
-const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 const MAX_PRODUCT_VALUE = 1000000
 
 interface Product {

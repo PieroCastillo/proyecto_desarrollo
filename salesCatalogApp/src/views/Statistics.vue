@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, inject, computed } from "vue"
+import { API_URL } from "@/config/api"
 
 interface TopConsultant {
   id: string
@@ -50,7 +51,6 @@ interface DashboardData {
 }
 
 const showNotification = inject<(msg: string, type?: string) => void>("showNotification")
-const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 
 const stats = ref<DashboardData | null>(null)
 const loading = ref(true)

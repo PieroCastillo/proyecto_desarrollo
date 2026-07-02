@@ -12,11 +12,11 @@ import ReturnsManagerView from "./views/ReturnsManager.vue"
 import RoutePlannerView from "./views/RoutePlanner.vue"
 import MyOrdersView from "./views/MyOrders.vue"
 import StatisticsView from "./views/Statistics.vue"
+import { API_URL } from "./config/api"
 
 const isLogged = ref(false) // Estado booleano de sesión iniciada
 const displayUserName = ref("Consultora") // Nombre de usuario para mostrar
 const userId = ref("") // ID del usuario logueado en MongoDB
-const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api" // Ruta base de la API del servidor
 
 const currentView = ref("home") // Rastreador de la pestaña de navegación activa
 const currentRole = ref("consultant")

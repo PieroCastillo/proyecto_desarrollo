@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, inject } from "vue"
+import { API_URL } from "@/config/api"
 
-const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 const showNotification = inject<(msg: string, type?: string) => void>("showNotification")
 
 interface Consultant {

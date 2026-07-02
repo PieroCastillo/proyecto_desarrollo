@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, inject } from "vue"
+import { API_URL } from "@/config/api"
 
 const props = defineProps<{ role: string }>()
 const showNotification = inject<(msg: string, type?: string) => void>("showNotification")
@@ -15,7 +16,6 @@ interface Training {
   completed: boolean
 }
 
-const API_URL = import.meta.env.REMOTE_API_URL || "http://localhost:3000/api"
 const trainings = ref<Training[]>([])
 const loading = ref(true)
 const processingId = ref<string | null>(null)
