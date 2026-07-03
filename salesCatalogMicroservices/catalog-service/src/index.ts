@@ -4,10 +4,12 @@ import { jwtMiddleware } from './middleware/auth'
 import { serve } from '@hono/node-server'
 
 import products from './routes/products'
+import status from './routes/status'
 
 const app = new Hono()
 
 app.use('/api/*', cors())
+app.route('/api', status)
 app.use('/api/*', jwtMiddleware)
 
 app.route('/api', products)

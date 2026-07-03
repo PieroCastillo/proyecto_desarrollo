@@ -3,6 +3,6 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - config.yaml
-  - mongo.yaml
   - microservices.yaml
   - api-gateway.yaml
+  - frontend.yaml

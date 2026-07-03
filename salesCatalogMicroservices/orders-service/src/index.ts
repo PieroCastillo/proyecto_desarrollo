@@ -7,10 +7,12 @@ import orders from './routes/orders'
 import dashboard from './routes/dashboard'
 import routes from './routes/routes'
 import trainings from './routes/trainings'
+import status from './routes/status'
 
 const app = new Hono()
 
 app.use('/api/*', cors())
+app.route('/api', status)
 app.use('/api/*', jwtMiddleware)
 
 app.route('/api', orders)

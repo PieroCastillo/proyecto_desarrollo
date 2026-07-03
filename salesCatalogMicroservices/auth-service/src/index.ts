@@ -6,10 +6,12 @@ import { serve } from '@hono/node-server'
 import auth from './routes/auth'
 import clients from './routes/clients'
 import consultants from './routes/consultants'
+import status from './routes/status'
 
 const app = new Hono()
 
 app.use('/api/*', cors())
+app.route('/api', status)
 app.use('/api/*', jwtMiddleware)
 
 app.route('/api', auth)
