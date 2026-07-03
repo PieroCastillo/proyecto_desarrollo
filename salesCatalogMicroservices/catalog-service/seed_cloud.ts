@@ -19,7 +19,7 @@ async function run() {
     const db = client.db("app");
     console.log("✓ Conexión establecida.");
 
-    // Los 29 productos originales + 10 nuevos = 39 productos en total
+    // Los 39 productos en total
     const fullCatalog = [
       // Tratamiento Facial
       { name: "Kit Facial Pro", category: "Tratamiento Facial", price: 89.90, stock: 15, imagen: "/images/products/kit_facial_pro.png" },
@@ -75,9 +75,9 @@ async function run() {
     console.log(`Inyectando ${fullCatalog.length} productos...`);
     await db.collection("products").insertMany(fullCatalog);
 
-    console.log(`✅ ¡Catálogo actualizado con éxito! Ahora tienes ${fullCatalog.length} productos en la nube.`);
+    console.log(`¡Catálogo actualizado con éxito! Ahora tienes ${fullCatalog.length} productos en la nube.`);
   } catch (error) {
-    console.error("❌ Ocurrió un error:", error);
+    console.error("Ocurrió un error:", error);
   } finally {
     await client.close();
   }
