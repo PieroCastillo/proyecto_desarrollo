@@ -70,26 +70,7 @@ async function fetchStats() {
     })
 
     if (res.ok) {
-      const raw = await res.json()
-      stats.value = {
-        monthlySales: raw.monthlySales || 0,
-        monthlyOrders: raw.monthlyOrders || 0,
-        totalSales: raw.totalSales || 0,
-        totalOrders: raw.totalOrders || 0,
-        averageOrderValue: raw.averageOrderValue || 0,
-        pendingOrders: raw.pendingOrders || 0,
-        lowStockProducts: raw.lowStockProducts || 0,
-        outOfStockProducts: raw.outOfStockProducts || 0,
-        totalProducts: raw.totalProducts || 0,
-        totalStock: raw.totalStock || 0,
-        averagePrice: raw.averagePrice || 0,
-        clientsCount: raw.clientsCount || 0,
-        consultantsCount: raw.consultantsCount || 0,
-        salesByStatus: raw.salesByStatus || [],
-        productsByCategory: raw.productsByCategory || (raw.salesByCategory || []).map((s: any) => ({ category: s._id, count: 0, stock: s.totalSales })),
-        topConsultants: raw.topConsultants || [],
-        recentOrders: raw.recentOrders || []
-      }
+      stats.value = await res.json()
     } else {
       showNotification?.("No se pudieron cargar las estadisticas del servidor.", "error")
     }
